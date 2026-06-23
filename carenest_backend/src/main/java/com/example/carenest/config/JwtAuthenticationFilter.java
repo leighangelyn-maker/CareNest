@@ -17,7 +17,6 @@ import java.util.Collections;
 
 @Slf4j
 @Component
-@SuppressWarnings("null")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -39,10 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String email = jwtUtils.getEmailFromToken(token);
                     String role = jwtUtils.getRoleFromToken(token);
 
-                    // Create authority with ROLE_ prefix for Spring Security
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
 
-                    // Create authentication token
                     UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(
                             email, 
@@ -50,42 +47,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             Collections.singletonList(authority)
                         );
 
-                    // Set authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    
                     log.debug("User authenticated: {} with role: {}", email, role);
                 }
             } catch (Exception e) {
                 log.error("JWT authentication failed: {}", e.getMessage());
-                // Clear security context on error
                 SecurityContextHolder.clearContext();
             }
         }
 
-        // Continue the filter chain
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Skip JWT authentication for public endpoints
-     * This improves performance by not checking JWT for public endpoints
-     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
         
-        // Public endpoints that don't require JWT authentication
+        // Skip JWT validation for public endpoints
         return path.startsWith("/auth/register") ||
+               path.startsWith("/auth/register-agency") ||
                path.startsWith("/auth/login") ||
                path.startsWith("/auth/refresh") ||
-               path.startsWith("/auth/verify-email") ||
-               path.startsWith("/auth/forgot-password") ||
-               path.startsWith("/auth/reset-password") ||
-               path.startsWith("/api-docs") ||
+               path.startsWith("/auth/logout") ||
+               path.startsWith("/h2-console") ||
                path.startsWith("/swagger-ui") ||
                path.startsWith("/v3/api-docs") ||
-               path.startsWith("/h2-console") ||
-               path.startsWith("/actuator/health") ||
-               path.startsWith("/payments/webhook/paystack");
+               path.startsWith("/api-docs");
     }
 }

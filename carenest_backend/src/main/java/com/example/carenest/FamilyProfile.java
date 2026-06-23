@@ -13,6 +13,8 @@ import lombok.Generated;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.example.carenest.auth.model.User;
+
 @Entity
 @Table(name = "family_profiles")
 public class FamilyProfile {

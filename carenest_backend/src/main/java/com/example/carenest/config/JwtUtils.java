@@ -3,7 +3,6 @@ package com.example.carenest.config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -17,8 +16,9 @@ public class JwtUtils {
     private final SecretKey key;
     private final int jwtExpirationMs = 900000; // 15 minutes
 
-    public JwtUtils(@Value("${jwt.secret:carenest-super-secret-key-2026-32-bytes-long!!}") String secret) {
-        // Use the secret from application.yml if provided, otherwise use default
+    public JwtUtils() {
+        // The secret must be at least 32 characters (256 bits) for HS256
+        String secret = "carenest-super-secret-key-2026-32-bytes-long!!!";
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -79,20 +79,6 @@ public class JwtUtils {
             return true;
         } catch (Exception e) {
             return false;
-        }
-    }
-
-    public boolean isTokenExpired(String token) {
-        try {
-            Date expiration = Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload()
-                    .getExpiration();
-            return expiration.before(new Date());
-        } catch (Exception e) {
-            return true;
         }
     }
 
