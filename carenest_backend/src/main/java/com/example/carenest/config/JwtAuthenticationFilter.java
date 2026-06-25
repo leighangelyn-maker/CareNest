@@ -62,16 +62,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
+        String method = request.getMethod();
         
         // Skip JWT validation for public endpoints
-        return path.startsWith("/auth/register") ||
-               path.startsWith("/auth/register-agency") ||
-               path.startsWith("/auth/login") ||
-               path.startsWith("/auth/refresh") ||
-               path.startsWith("/auth/logout") ||
-               path.startsWith("/h2-console") ||
-               path.startsWith("/swagger-ui") ||
-               path.startsWith("/v3/api-docs") ||
-               path.startsWith("/api-docs");
+        if (path.startsWith("/auth/register") ||
+            path.startsWith("/auth/register-agency") ||
+            path.startsWith("/auth/login") ||
+            path.startsWith("/auth/refresh") ||
+            path.startsWith("/auth/logout") ||
+            path.startsWith("/h2-console") ||
+            path.startsWith("/swagger-ui") ||
+            path.startsWith("/v3/api-docs") ||
+            path.startsWith("/api-docs") ||
+            path.startsWith("/public-test")) {
+            return true;
+        }
+        
+        // Allow GET requests to worker profiles without authentication
+        if (path.startsWith("/workers/profile") && method.equals("GET")) {
+            return true;
+        }
+        
+        return false;
     }
 }
