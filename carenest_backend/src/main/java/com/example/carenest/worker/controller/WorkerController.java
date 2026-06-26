@@ -42,48 +42,49 @@ public class WorkerController {
             Authentication authentication) {
 
         log.info("📥 Creating worker profile");
-        
-        // Get the email from authentication
-        String email = authentication.getName();
-        log.info("👤 Authenticated user email: {}", email);
 
-        // Find the user by email
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
-        log.info("👤 User: {}, Role: {}, AgencyId: {}", 
-            user.getEmail(), user.getRole(), user.getAgencyId());
+        try {
+            // Get email from authentication
+            String email = authentication.getName();
+            log.info("Authenticated email: {}", email);
 
-        UUID agencyId = user.getAgencyId();
+            // Find user by email
+            User admin = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Admin not found with email: " + email));
 
-        if (agencyId == null) {
-            log.error("❌ User has no agency ID!");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Agency admin must belong to an agency"));
+            log.info("Admin found: {}, Role: {}, AgencyId: {}", 
+                admin.getEmail(), admin.getRole(), admin.getAgencyId());
+
+            UUID agencyId = admin.getAgencyId();
+
+            if (agencyId == null) {
+                log.error("❌ Admin has no agency ID!");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error("Agency admin must belong to an agency"));
+            }
+
+            WorkerProfileResponse response = workerService.createWorkerProfile(agencyId, request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(response, "Worker created successfully"));
+
+        } catch (Exception e) {
+            log.error("❌ Error creating worker: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to create worker: " + e.getMessage()));
         }
-
-        WorkerProfileResponse response = workerService.createWorkerProfile(user.getId(), agencyId, request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response, "Worker profile created successfully"));
     }
 
     @GetMapping("/profile/{workerId}")
     @Operation(summary = "Get worker profile by ID")
     public ResponseEntity<ApiResponse<WorkerProfileResponse>> getWorkerProfile(@PathVariable UUID workerId) {
-        WorkerProfileResponse response = workerService.getWorkerProfile(workerId);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    @GetMapping("/profile/me")
-    @PreAuthorize("hasRole('WORKER')")
-    @Operation(summary = "Get authenticated worker's profile")
-    public ResponseEntity<ApiResponse<WorkerProfileResponse>> getMyWorkerProfile(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
-        WorkerProfileResponse response = workerService.getWorkerProfileByUser(user.getId());
-        return ResponseEntity.ok(ApiResponse.success(response));
+        try {
+            WorkerProfileResponse response = workerService.getWorkerProfile(workerId);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("❌ Error getting worker profile: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Worker not found"));
+        }
     }
 
     @PutMapping("/profile/{workerId}")
@@ -94,15 +95,29 @@ public class WorkerController {
             @Valid @RequestBody WorkerProfileRequest request,
             Authentication authentication) {
 
-        // Verify the user is an agency admin for this worker's agency
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
-        // You might want to add additional validation here to ensure the admin belongs to the same agency
+        log.info("📝 Updating worker profile: {}", workerId);
 
-        WorkerProfileResponse response = workerService.updateWorkerProfile(workerId, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Worker profile updated successfully"));
+        try {
+            // Verify admin belongs to same agency as worker
+            String email = authentication.getName();
+            User admin = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+            // Optional: Verify admin's agency matches worker's agency
+            // WorkerProfile existing = workerService.getWorkerProfile(workerId);
+            // if (!existing.getAgencyId().equals(admin.getAgencyId())) {
+            //     return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            //             .body(ApiResponse.error("You can only update workers in your agency"));
+            // }
+
+            WorkerProfileResponse response = workerService.updateWorkerProfile(workerId, request);
+            return ResponseEntity.ok(ApiResponse.success(response, "Worker profile updated successfully"));
+
+        } catch (Exception e) {
+            log.error("❌ Error updating worker: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to update worker: " + e.getMessage()));
+        }
     }
 
     @PatchMapping("/profile/{workerId}/availability")
@@ -113,8 +128,16 @@ public class WorkerController {
             @Valid @RequestBody WorkerAvailabilityRequest request,
             Authentication authentication) {
 
-        WorkerProfileResponse response = workerService.updateAvailability(workerId, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Worker availability updated successfully"));
+        log.info("📅 Updating availability for worker: {}", workerId);
+
+        try {
+            WorkerProfileResponse response = workerService.updateAvailability(workerId, request);
+            return ResponseEntity.ok(ApiResponse.success(response, "Worker availability updated successfully"));
+        } catch (Exception e) {
+            log.error("❌ Error updating availability: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to update availability: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/agency/{agencyId}")
@@ -125,9 +148,15 @@ public class WorkerController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "firstName") String sortBy) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
-        Page<WorkerProfileResponse> responses = workerService.getWorkersByAgency(agencyId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(responses));
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+            Page<WorkerProfileResponse> responses = workerService.getWorkersByAgency(agencyId, pageable);
+            return ResponseEntity.ok(ApiResponse.success(responses));
+        } catch (Exception e) {
+            log.error("❌ Error getting workers: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to get workers: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/agency/{agencyId}/available")
@@ -138,9 +167,15 @@ public class WorkerController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("averageRating").descending());
-        Page<WorkerProfileResponse> responses = workerService.getAvailableWorkersByAgencyAndService(agencyId, service, pageable);
-        return ResponseEntity.ok(ApiResponse.success(responses));
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("averageRating").descending());
+            Page<WorkerProfileResponse> responses = workerService.getAvailableWorkersByAgencyAndService(agencyId, service, pageable);
+            return ResponseEntity.ok(ApiResponse.success(responses));
+        } catch (Exception e) {
+            log.error("❌ Error getting available workers: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to get available workers: " + e.getMessage()));
+        }
     }
 
     @DeleteMapping("/profile/{workerId}")
@@ -150,16 +185,30 @@ public class WorkerController {
             @PathVariable UUID workerId,
             Authentication authentication) {
 
-        workerService.deleteWorkerProfile(workerId);
-        return ResponseEntity.ok(ApiResponse.success("Worker profile deleted successfully"));
+        log.info("🗑️ Deleting worker profile: {}", workerId);
+
+        try {
+            workerService.deleteWorkerProfile(workerId);
+            return ResponseEntity.ok(ApiResponse.success("Worker profile deleted successfully"));
+        } catch (Exception e) {
+            log.error("❌ Error deleting worker: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete worker: " + e.getMessage()));
+        }
     }
 
     @PatchMapping("/profile/{workerId}/verify")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Verify a worker (Admin only)")
     public ResponseEntity<ApiResponse<Void>> verifyWorker(@PathVariable UUID workerId) {
-        workerService.verifyWorker(workerId);
-        return ResponseEntity.ok(ApiResponse.success("Worker verified successfully"));
+        try {
+            workerService.verifyWorker(workerId);
+            return ResponseEntity.ok(ApiResponse.success("Worker verified successfully"));
+        } catch (Exception e) {
+            log.error("❌ Error verifying worker: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to verify worker: " + e.getMessage()));
+        }
     }
 
     @PatchMapping("/profile/{workerId}/reject")
@@ -169,7 +218,13 @@ public class WorkerController {
             @PathVariable UUID workerId,
             @RequestParam(required = false) String reason) {
 
-        workerService.rejectWorker(workerId, reason != null ? reason : "No reason provided");
-        return ResponseEntity.ok(ApiResponse.success("Worker rejected"));
+        try {
+            workerService.rejectWorker(workerId, reason != null ? reason : "No reason provided");
+            return ResponseEntity.ok(ApiResponse.success("Worker rejected"));
+        } catch (Exception e) {
+            log.error("❌ Error rejecting worker: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to reject worker: " + e.getMessage()));
+        }
     }
 }

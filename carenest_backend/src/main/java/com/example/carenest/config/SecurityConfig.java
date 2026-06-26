@@ -53,7 +53,7 @@ public class SecurityConfig {
             .cors(cors -> cors.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    // Auth endpoints
+                    // Auth endpoints - PUBLIC
                     "/auth/register",
                     "/auth/register-agency",
                     "/auth/login",
@@ -62,17 +62,16 @@ public class SecurityConfig {
                     "/auth/verify-email",
                     "/auth/forgot-password",
                     "/auth/reset-password",
-                    // H2 Console
+                    // H2 Console - PUBLIC (dev only)
                     "/h2-console/**",
-                    // Swagger
+                    // Swagger - PUBLIC
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/api-docs/**",
-                    // Test
-                    "/public-test",
-                    // Worker endpoints that should be public (GET requests)
-                    "/workers/profile/**"  // ← Allows all GET requests to /workers/profile/*
+                    // Test - PUBLIC
+                    "/public-test"
                 ).permitAll()
+                // Everything else requires authentication (handled by @PreAuthorize)
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

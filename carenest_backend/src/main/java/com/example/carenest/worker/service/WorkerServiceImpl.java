@@ -2,8 +2,6 @@ package com.example.carenest.worker.service;
 
 import com.example.carenest.agency.model.Agency;
 import com.example.carenest.agency.repository.AgencyRepository;
-import com.example.carenest.auth.model.User;
-import com.example.carenest.auth.UserRepository;
 import com.example.carenest.worker.dto.WorkerAvailabilityRequest;
 import com.example.carenest.worker.dto.WorkerProfileRequest;
 import com.example.carenest.worker.dto.WorkerProfileResponse;
@@ -17,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Slf4j
@@ -25,30 +24,19 @@ import java.util.UUID;
 public class WorkerServiceImpl implements WorkerService {
 
     private final WorkerProfileRepository workerProfileRepository;
-    private final UserRepository userRepository;
     private final AgencyRepository agencyRepository;
 
     @Override
     @Transactional
-    public WorkerProfileResponse createWorkerProfile(UUID userId, UUID agencyId, WorkerProfileRequest request) {
-        log.info("Creating worker profile for user: {} in agency: {}", userId, agencyId);
-
-        // Check if user exists
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public WorkerProfileResponse createWorkerProfile(UUID agencyId, WorkerProfileRequest request) {
+        log.info("Creating worker profile for agency: {}", agencyId);
 
         // Check if agency exists
         Agency agency = agencyRepository.findById(agencyId)
-                .orElseThrow(() -> new RuntimeException("Agency not found"));
+                .orElseThrow(() -> new RuntimeException("Agency not found with ID: " + agencyId));
 
-        // Check if worker profile already exists for this user
-        if (workerProfileRepository.findByUserId(userId).isPresent()) {
-            throw new RuntimeException("Worker profile already exists for this user");
-        }
-
-        // Create worker profile
+        // Create worker profile (no User association)
         WorkerProfile workerProfile = WorkerProfile.builder()
-                .user(user)
                 .agency(agency)
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -58,8 +46,8 @@ public class WorkerServiceImpl implements WorkerService {
                 .hourlyRate(request.getHourlyRate())
                 .isAvailable(request.getIsAvailable() != null ? request.getIsAvailable() : true)
                 .preferredLocation(request.getPreferredLocation())
-                .services(request.getServices())
-                .availableDays(request.getAvailableDays())
+                .services(request.getServices() != null ? request.getServices() : new ArrayList<>())
+                .availableDays(request.getAvailableDays() != null ? request.getAvailableDays() : new ArrayList<>())
                 .verificationStatus(VerificationStatus.PENDING)
                 .isVerified(false)
                 .averageRating(0.0)
@@ -75,15 +63,14 @@ public class WorkerServiceImpl implements WorkerService {
     @Override
     public WorkerProfileResponse getWorkerProfile(UUID workerId) {
         WorkerProfile workerProfile = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found"));
+                .orElseThrow(() -> new RuntimeException("Worker profile not found with ID: " + workerId));
         return mapToResponse(workerProfile);
     }
 
     @Override
     public WorkerProfileResponse getWorkerProfileByUser(UUID userId) {
-        WorkerProfile workerProfile = workerProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found for user"));
-        return mapToResponse(workerProfile);
+        // Since workers no longer have User accounts, this method is deprecated
+        throw new RuntimeException("Workers do not have user accounts. Use getWorkerProfile(workerId) instead.");
     }
 
     @Override
@@ -92,9 +79,9 @@ public class WorkerServiceImpl implements WorkerService {
         log.info("Updating worker profile: {}", workerId);
 
         WorkerProfile workerProfile = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found"));
+                .orElseThrow(() -> new RuntimeException("Worker profile not found with ID: " + workerId));
 
-        // Update fields
+        // Update fields if present
         if (request.getFirstName() != null) workerProfile.setFirstName(request.getFirstName());
         if (request.getLastName() != null) workerProfile.setLastName(request.getLastName());
         if (request.getPhotoUrl() != null) workerProfile.setPhotoUrl(request.getPhotoUrl());
@@ -118,7 +105,7 @@ public class WorkerServiceImpl implements WorkerService {
         log.info("Updating availability for worker: {}", workerId);
 
         WorkerProfile workerProfile = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found"));
+                .orElseThrow(() -> new RuntimeException("Worker profile not found with ID: " + workerId));
 
         if (request.getIsAvailable() != null) {
             workerProfile.setIsAvailable(request.getIsAvailable());
@@ -152,7 +139,7 @@ public class WorkerServiceImpl implements WorkerService {
         log.info("Deleting worker profile: {}", workerId);
 
         WorkerProfile workerProfile = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found"));
+                .orElseThrow(() -> new RuntimeException("Worker profile not found with ID: " + workerId));
 
         workerProfileRepository.delete(workerProfile);
         log.info("Worker profile deleted successfully: {}", workerId);
@@ -164,7 +151,7 @@ public class WorkerServiceImpl implements WorkerService {
         log.info("Verifying worker: {}", workerId);
 
         WorkerProfile workerProfile = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found"));
+                .orElseThrow(() -> new RuntimeException("Worker profile not found with ID: " + workerId));
 
         workerProfile.setVerificationStatus(VerificationStatus.VERIFIED);
         workerProfile.setIsVerified(true);
@@ -179,7 +166,7 @@ public class WorkerServiceImpl implements WorkerService {
         log.info("Rejecting worker: {} with reason: {}", workerId, reason);
 
         WorkerProfile workerProfile = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker profile not found"));
+                .orElseThrow(() -> new RuntimeException("Worker profile not found with ID: " + workerId));
 
         workerProfile.setVerificationStatus(VerificationStatus.REJECTED);
         workerProfile.setIsVerified(false);
@@ -189,9 +176,10 @@ public class WorkerServiceImpl implements WorkerService {
     }
 
     private WorkerProfileResponse mapToResponse(WorkerProfile workerProfile) {
+        Agency agency = workerProfile.getAgency();
+        
         return WorkerProfileResponse.builder()
                 .id(workerProfile.getId())
-                .userId(workerProfile.getUser().getId())
                 .firstName(workerProfile.getFirstName())
                 .lastName(workerProfile.getLastName())
                 .photoUrl(workerProfile.getPhotoUrl())
@@ -206,8 +194,8 @@ public class WorkerServiceImpl implements WorkerService {
                 .availableDays(workerProfile.getAvailableDays())
                 .isVerified(workerProfile.getIsVerified())
                 .verificationStatus(workerProfile.getVerificationStatus())
-                .agencyName(workerProfile.getAgency().getName())
-                .agencyId(workerProfile.getAgency().getId())
+                .agencyName(agency != null ? agency.getName() : null)
+                .agencyId(agency != null ? agency.getId() : null)
                 .build();
     }
 }

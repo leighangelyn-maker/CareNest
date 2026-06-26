@@ -48,12 +48,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("User authenticated: {} with role: {}", email, role);
+                    log.info("🔐 User authenticated: {} with role: {}", email, role);
+                } else {
+                    log.warn("⚠️ Invalid token provided");
                 }
             } catch (Exception e) {
-                log.error("JWT authentication failed: {}", e.getMessage());
+                log.error("❌ JWT authentication failed: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }
+        } else {
+            log.debug("No Authorization header found for: {}", request.getServletPath());
         }
 
         filterChain.doFilter(request, response);
@@ -62,14 +66,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        String method = request.getMethod();
         
-        // Skip JWT validation for public endpoints
+        log.debug("Checking shouldNotFilter for path: {}", path);
+        
+        // ONLY skip JWT validation for truly public endpoints
+        // These endpoints are accessible without any authentication
         if (path.startsWith("/auth/register") ||
             path.startsWith("/auth/register-agency") ||
             path.startsWith("/auth/login") ||
             path.startsWith("/auth/refresh") ||
             path.startsWith("/auth/logout") ||
+            path.startsWith("/auth/verify-email") ||
+            path.startsWith("/auth/forgot-password") ||
+            path.startsWith("/auth/reset-password") ||
             path.startsWith("/h2-console") ||
             path.startsWith("/swagger-ui") ||
             path.startsWith("/v3/api-docs") ||
@@ -78,10 +87,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         
-        // Allow GET requests to worker profiles without authentication
-        if (path.startsWith("/workers/profile") && method.equals("GET")) {
-            return true;
-        }
+        // ALL other endpoints require authentication
+        // This includes:
+        // - /workers/profile (POST, PUT, PATCH, DELETE)
+        // - /workers/profile/{id} (GET) - requires authentication
+        // - /documents/upload (POST) - requires authentication
+        // - /documents/worker/{id} (GET) - requires authentication
+        // - /documents/{id} (GET) - requires authentication
+        // - /documents/check/{workerId}/{type} (GET) - requires authentication
+        // - /documents/pending (GET) - requires authentication
+        // - /documents/{id}/verify (PATCH) - requires authentication
         
         return false;
     }

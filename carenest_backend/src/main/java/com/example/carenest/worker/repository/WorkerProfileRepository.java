@@ -16,7 +16,8 @@ import java.util.UUID;
 @Repository
 public interface WorkerProfileRepository extends JpaRepository<WorkerProfile, UUID> {
 
-    Optional<WorkerProfile> findByUserId(UUID userId);
+    // Remove this - no longer exists
+    // Optional<WorkerProfile> findByUserId(UUID userId);
 
     List<WorkerProfile> findByAgencyId(UUID agencyId);
 

@@ -10,11 +10,11 @@ import java.util.UUID;
 
 public interface WorkerService {
 
-    WorkerProfileResponse createWorkerProfile(UUID userId, UUID agencyId, WorkerProfileRequest request);
+    WorkerProfileResponse createWorkerProfile(UUID agencyId, WorkerProfileRequest request);
 
     WorkerProfileResponse getWorkerProfile(UUID workerId);
 
-    WorkerProfileResponse getWorkerProfileByUser(UUID userId);
+    WorkerProfileResponse getWorkerProfileByUser(UUID userId);  // Deprecated
 
     WorkerProfileResponse updateWorkerProfile(UUID workerId, WorkerProfileRequest request);
 

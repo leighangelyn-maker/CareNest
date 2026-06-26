@@ -1,6 +1,5 @@
 package com.example.carenest.worker.model;
 
-import com.example.carenest.auth.model.User;
 import com.example.carenest.agency.model.Agency;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -25,11 +24,7 @@ public class WorkerProfile {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agency_id", nullable = false)
     private Agency agency;
 
@@ -80,7 +75,7 @@ public class WorkerProfile {
     @Enumerated(EnumType.STRING)
     private VerificationStatus verificationStatus;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
