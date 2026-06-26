@@ -2,6 +2,8 @@ package com.example.carenest.auth;
 
 import com.example.carenest.auth.dto.*;
 import com.example.carenest.common.dto.response.ApiResponse;
+
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,5 +54,13 @@ public class AuthController {
         log.info("Received logout request");
         authService.logout(request);
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
+    }
+
+    @PostMapping("/register-admin")
+    @Operation(summary = "Register a new admin account")
+    public ResponseEntity<ApiResponse<AuthResponse>> registerAdmin(@Valid @RequestBody RegisterRequest request) {
+        AuthResponse response = authService.registerAdmin(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Admin registration successful"));
     }
 }

@@ -270,4 +270,59 @@ public class AuthServiceImpl implements AuthService {
         log.info("Logging out user");
         SecurityContextHolder.clearContext();
     }
+
+    // ==================== ADMIN REGISTRATION ====================
+
+    @Override
+    @Transactional
+    public AuthResponse registerAdmin(RegisterRequest request) {
+        log.info("Registering admin: {}", request.getEmail());
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already registered");
+        }
+
+        if (userRepository.existsByPhone(request.getPhone())) {
+            throw new RuntimeException("Phone number already registered");
+        }
+
+        User user = User.builder()
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .role(Role.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .failedLoginAttempts(0)
+                .build();
+
+        user = userRepository.save(user);
+        log.info("Admin registered successfully: {}", user.getEmail());
+
+        String accessToken = jwtUtils.generateAccessToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.getId(),
+                user.getAgencyId()
+        );
+
+        String refreshToken = jwtUtils.generateRefreshToken(
+                user.getEmail(),
+                user.getRole().name(),
+                user.getId(),
+                user.getAgencyId()
+        );
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(AuthResponse.UserInfo.builder()
+                        .id(user.getId().toString())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .status(user.getStatus())
+                        .build())
+                .build();
+    }
 }

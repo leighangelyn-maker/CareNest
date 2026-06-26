@@ -70,9 +70,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.debug("Checking shouldNotFilter for path: {}", path);
         
         // ONLY skip JWT validation for truly public endpoints
-        // These endpoints are accessible without any authentication
         if (path.startsWith("/auth/register") ||
             path.startsWith("/auth/register-agency") ||
+            path.startsWith("/auth/register-admin") ||
             path.startsWith("/auth/login") ||
             path.startsWith("/auth/refresh") ||
             path.startsWith("/auth/logout") ||
@@ -83,20 +83,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.startsWith("/swagger-ui") ||
             path.startsWith("/v3/api-docs") ||
             path.startsWith("/api-docs") ||
-            path.startsWith("/public-test")) {
+            path.startsWith("/public-test") ||
+            path.startsWith("/documents/")) {
             return true;
         }
-        
-        // ALL other endpoints require authentication
-        // This includes:
-        // - /workers/profile (POST, PUT, PATCH, DELETE)
-        // - /workers/profile/{id} (GET) - requires authentication
-        // - /documents/upload (POST) - requires authentication
-        // - /documents/worker/{id} (GET) - requires authentication
-        // - /documents/{id} (GET) - requires authentication
-        // - /documents/check/{workerId}/{type} (GET) - requires authentication
-        // - /documents/pending (GET) - requires authentication
-        // - /documents/{id}/verify (PATCH) - requires authentication
         
         return false;
     }

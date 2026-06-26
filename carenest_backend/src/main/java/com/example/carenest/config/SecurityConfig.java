@@ -55,7 +55,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     // Auth endpoints - PUBLIC
                     "/auth/register",
-                    "/auth/register-agency",
+                    "/auth/register-agency", 
+                    "/auth/register-admin",
                     "/auth/login",
                     "/auth/refresh",
                     "/auth/logout",
@@ -69,7 +70,9 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/api-docs/**",
                     // Test - PUBLIC
-                    "/public-test"
+                    "/public-test",
+                    // Document endpoints - PUBLIC (GET only)
+                    "/documents/**"
                 ).permitAll()
                 // Everything else requires authentication (handled by @PreAuthorize)
                 .anyRequest().authenticated()
