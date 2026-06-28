@@ -1,59 +1,60 @@
- import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
-  Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity,
   StyleSheet, SafeAreaView, ScrollView, Alert
 } from 'react-native';
 
-export default function BookingScreen({ navigation }: any) {
-  const [service, setService] = useState('');
-  const [date, setDate] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
+export default function LoginScreen({ navigation }: any) {
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole]         = useState<'client' | 'agency'>('client');
 
-  const handleBooking = () => {
-    if (!service || !date || !address) {
-      Alert.alert('Error', 'Please fill in all required fields');
+  const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    Alert.alert('Success', 'Booking submitted!');
-    navigation.navigate('Main');
+    if (role === 'agency') {
+      navigation.navigate('AgencyHome');
+    } else {
+      navigation.navigate('Main');
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>New Booking</Text>
+        <Text style={styles.title}>🏠 Care Nest</Text>
+        <Text style={styles.subtitle}>Welcome back</Text>
 
-        <Text style={styles.label}>Service Type *</Text>
-        <TextInput style={styles.input}
-          placeholder="e.g. Nanny, Cleaner, Cook"
-          placeholderTextColor="#888" value={service}
-          onChangeText={setService} />
+        <Text style={styles.roleLabel}>Login as...</Text>
+        <View style={styles.roleRow}>
+          <TouchableOpacity
+            style={[styles.roleChip, role === 'client' && styles.roleChipActive]}
+            onPress={() => setRole('client')}>
+            <Text style={[styles.roleText, role === 'client' && styles.roleTextActive]}>👤 Client</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.roleChip, role === 'agency' && styles.roleChipActive]}
+            onPress={() => setRole('agency')}>
+            <Text style={[styles.roleText, role === 'agency' && styles.roleTextActive]}>🏢 Agency</Text>
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.label}>Date *</Text>
-        <TextInput style={styles.input}
-          placeholder="e.g. 2026-06-20"
-          placeholderTextColor="#888" value={date}
-          onChangeText={setDate} />
+        <TextInput style={styles.input} placeholder="Email"
+          placeholderTextColor="#888" value={email} onChangeText={setEmail}
+          keyboardType="email-address" autoCapitalize="none" />
 
-        <Text style={styles.label}>Address *</Text>
-        <TextInput style={styles.input}
-          placeholder="Your home address"
-          placeholderTextColor="#888" value={address}
-          onChangeText={setAddress} />
+        <TextInput style={styles.input} placeholder="Password"
+          placeholderTextColor="#888" value={password}
+          onChangeText={setPassword} secureTextEntry />
 
-        <Text style={styles.label}>Additional Notes</Text>
-        <TextInput style={[styles.input, styles.textArea]}
-          placeholder="Any special instructions..."
-          placeholderTextColor="#888" value={notes}
-          onChangeText={setNotes} multiline numberOfLines={4} />
-
-        <TouchableOpacity style={styles.button} onPress={handleBooking}>
-          <Text style={styles.buttonText}>Confirm Booking</Text>
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.link}>Go Back</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <Text style={styles.link}>Don't have an account? Register</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -61,13 +62,18 @@ export default function BookingScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A1F44' },
-  scroll: { padding: 24 },
-  title: { color: '#fff', fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
-  label: { color: '#00BCD4', fontSize: 14, marginBottom: 6 },
-  input: { backgroundColor: '#1C2E4A', color: '#fff', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 16 },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  button: { backgroundColor: '#00BCD4', borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 16 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  link: { color: '#00BCD4', textAlign: 'center', fontSize: 14 },
+  container:      { flex: 1, backgroundColor: '#0A1F44' },
+  scroll:         { padding: 24, justifyContent: 'center', flexGrow: 1 },
+  title:          { fontSize: 36, fontWeight: 'bold', color: '#00BCD4', textAlign: 'center', marginBottom: 8 },
+  subtitle:       { fontSize: 16, color: '#fff', textAlign: 'center', marginBottom: 32 },
+  roleLabel:      { color: '#00BCD4', fontSize: 14, marginBottom: 10 },
+  roleRow:        { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  roleChip:       { flex: 1, borderWidth: 1, borderColor: '#00BCD4', borderRadius: 12, padding: 14, alignItems: 'center' },
+  roleChipActive: { backgroundColor: '#00BCD4' },
+  roleText:       { color: '#00BCD4', fontWeight: 'bold', fontSize: 15 },
+  roleTextActive: { color: '#fff' },
+  input:          { backgroundColor: '#1C2E4A', color: '#fff', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 16 },
+  button:         { backgroundColor: '#00BCD4', borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 16 },
+  buttonText:     { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  link:           { color: '#00BCD4', textAlign: 'center', fontSize: 14 },
 });

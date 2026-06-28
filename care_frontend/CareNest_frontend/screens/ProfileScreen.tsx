@@ -1,32 +1,36 @@
- import React from 'react';
+import React from 'react';
 import {
   View, Text, TouchableOpacity,
   StyleSheet, SafeAreaView, ScrollView
 } from 'react-native';
 
 export default function ProfileScreen({ navigation }: any) {
+  const user = {
+    name: 'Ama Mensah',
+    email: 'ama@email.com',
+    phone: '+233 24 000 0000',
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>E</Text>
-          </View>
-          <Text style={styles.name}>Elizabeth</Text>
-          <Text style={styles.email}>elizabeth@carenest.com</Text>
+        <Text style={styles.title}>👤 My Profile</Text>
+
+        <View style={styles.avatarBox}>
+          <Text style={styles.avatar}>👤</Text>
+          <Text style={styles.name}>{user.name}</Text>
+          <Text style={styles.role}>Client</Text>
         </View>
 
         <View style={styles.card}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>📋 My Bookings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>⚙️ Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>❓ Help & Support</Text>
-          </TouchableOpacity>
+          <Row label="Email" value={user.email} />
+          <Row label="Phone" value={user.phone} />
+          <Row label="Role"  value="Client" />
         </View>
+
+        <TouchableOpacity style={styles.editBtn}>
+          <Text style={styles.editBtnText}>Edit Profile</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.logoutBtn}
           onPress={() => navigation.navigate('Login')}>
@@ -37,17 +41,32 @@ export default function ProfileScreen({ navigation }: any) {
   );
 }
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={rowStyles.row}>
+      <Text style={rowStyles.label}>{label}</Text>
+      <Text style={rowStyles.value}>{value}</Text>
+    </View>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  row:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#2E4060' },
+  label: { color: '#888', fontSize: 14 },
+  value: { color: '#fff', fontSize: 14 },
+});
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A1F44' },
-  scroll: { padding: 24 },
-  avatarContainer: { alignItems: 'center', marginBottom: 32 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#00BCD4', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  avatarText: { color: '#fff', fontSize: 36, fontWeight: 'bold' },
-  name: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  email: { color: '#aaa', fontSize: 14 },
-  card: { backgroundColor: '#1C2E4A', borderRadius: 12, padding: 8, marginBottom: 24 },
-  menuItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#0A1F44' },
-  menuText: { color: '#fff', fontSize: 16 },
-  logoutBtn: { borderColor: '#ff4444', borderWidth: 1, borderRadius: 10, padding: 14, alignItems: 'center' },
-  logoutText: { color: '#ff4444', fontWeight: 'bold', fontSize: 16 },
+  container:   { flex: 1, backgroundColor: '#0A1F44' },
+  scroll:      { padding: 24, paddingBottom: 48 },
+  title:       { color: '#fff', fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
+  avatarBox:   { alignItems: 'center', marginBottom: 24 },
+  avatar:      { fontSize: 64, marginBottom: 12 },
+  name:        { color: '#fff', fontSize: 22, fontWeight: 'bold' },
+  role:        { color: '#00BCD4', fontSize: 14, marginTop: 4 },
+  card:        { backgroundColor: '#1C2E4A', borderRadius: 14, padding: 16, marginBottom: 24 },
+  editBtn:     { backgroundColor: '#1C2E4A', borderWidth: 1, borderColor: '#00BCD4', borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 12 },
+  editBtnText: { color: '#00BCD4', fontWeight: 'bold', fontSize: 16 },
+  logoutBtn:   { backgroundColor: '#00BCD4', borderRadius: 10, padding: 16, alignItems: 'center' },
+  logoutText:  { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

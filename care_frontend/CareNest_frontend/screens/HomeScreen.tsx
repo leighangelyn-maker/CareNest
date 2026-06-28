@@ -1,64 +1,55 @@
- import React, { useState } from 'react';
+import React from 'react';
 import {
-  Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, Alert, ScrollView
+  View, Text, TouchableOpacity,
+  StyleSheet, SafeAreaView, ScrollView
 } from 'react-native';
 
-export default function RegisterScreen({ navigation }: any) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+const services = [
+  { id: '1', icon: '👶', name: 'Nanny',   desc: 'Trusted childcare at home' },
+  { id: '2', icon: '🧹', name: 'Cleaner', desc: 'Professional home cleaning' },
+  { id: '3', icon: '👨‍🍳', name: 'Cook',    desc: 'Skilled home cooking' },
+];
 
-  const handleRegister = () => {
-    if (!name || !email || !phone || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-    Alert.alert('Success', 'Account created!');
-    navigation.navigate('Login');
-  };
-
+export default function HomeScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>🏠 Care Nest</Text>
-        <Text style={styles.subtitle}>Create an account</Text>
+        <Text style={styles.greeting}>Hello 👋</Text>
+        <Text style={styles.title}>What service do you need today?</Text>
 
-        <TextInput style={styles.input} placeholder="Full Name"
-          placeholderTextColor="#888" value={name} onChangeText={setName} />
+        {services.map((s) => (
+          <TouchableOpacity key={s.id} style={styles.card}
+            onPress={() => navigation.navigate('NewBooking', { service: s.name })}>
+            <Text style={styles.cardIcon}>{s.icon}</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>{s.name}</Text>
+              <Text style={styles.cardDesc}>{s.desc}</Text>
+            </View>
+            <Text style={styles.arrow}>→</Text>
+          </TouchableOpacity>
+        ))}
 
-        <TextInput style={styles.input} placeholder="Email"
-          placeholderTextColor="#888" value={email} onChangeText={setEmail}
-          keyboardType="email-address" autoCapitalize="none" />
-
-        <TextInput style={styles.input} placeholder="Phone Number"
-          placeholderTextColor="#888" value={phone} onChangeText={setPhone}
-          keyboardType="phone-pad" />
-
-        <TextInput style={styles.input} placeholder="Password"
-          placeholderTextColor="#888" value={password}
-          onChangeText={setPassword} secureTextEntry />
-
-        <TouchableOpacity style={styles.button} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Register</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.link}>Already have an account? Login</Text>
-        </TouchableOpacity>
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>🇬 Serving across Ghana</Text>
+          <Text style={styles.bannerSub}>Verified agencies. Trusted workers.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A1F44' },
-  scroll: { padding: 24, justifyContent: 'center', flexGrow: 1 },
-  title: { fontSize: 36, fontWeight: 'bold', color: '#00BCD4', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#fff', textAlign: 'center', marginBottom: 32 },
-  input: { backgroundColor: '#1C2E4A', color: '#fff', borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 16 },
-  button: { backgroundColor: '#00BCD4', borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 16 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  link: { color: '#00BCD4', textAlign: 'center', fontSize: 14 },
+  container:  { flex: 1, backgroundColor: '#0A1F44' },
+  scroll:     { padding: 24, paddingBottom: 48 },
+  greeting:   { color: '#888', fontSize: 16, marginBottom: 4 },
+  title:      { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 24 },
+  card:       { backgroundColor: '#1C2E4A', borderRadius: 14, padding: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  cardIcon:   { fontSize: 40, marginRight: 16 },
+  cardText:   { flex: 1 },
+  cardTitle:  { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  cardDesc:   { color: '#888', fontSize: 14, marginTop: 4 },
+  arrow:      { color: '#00BCD4', fontSize: 20 },
+  banner:     { backgroundColor: '#1C2E4A', borderRadius: 14, padding: 20, alignItems: 'center', marginTop: 8 },
+  bannerText: { color: '#00BCD4', fontSize: 16, fontWeight: 'bold' },
+  bannerSub:  { color: '#888', fontSize: 13, marginTop: 4 },
 });
