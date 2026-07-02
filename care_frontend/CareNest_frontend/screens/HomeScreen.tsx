@@ -19,7 +19,7 @@ export default function HomeScreen({ navigation }: any) {
 
         {services.map((s) => (
           <TouchableOpacity key={s.id} style={styles.card}
-            onPress={() => navigation.navigate('NewBooking', { service: s.name })}>
+             onPress={() => navigation.navigate('AgencySearch', { service: s.name })}>
             <Text style={styles.cardIcon}>{s.icon}</Text>
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>{s.name}</Text>
@@ -30,7 +30,7 @@ export default function HomeScreen({ navigation }: any) {
         ))}
 
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>🇬 Serving across Ghana</Text>
+          <Text style={styles.bannerText}>🇬🇭 Serving across Ghana</Text>
           <Text style={styles.bannerSub}>Verified agencies. Trusted workers.</Text>
         </View>
       </ScrollView>
