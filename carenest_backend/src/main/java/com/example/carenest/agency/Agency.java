@@ -1,6 +1,9 @@
 package com.example.carenest.agency;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,10 +22,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 @Entity
 @Table(name = "agency")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Agency {
 
     @Id
@@ -54,22 +62,27 @@ public class Agency {
     @Column(name = "website")
     private String website;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private AgencyStatus status;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "verification_status")
-    private VerificationStatus verificationstatus;
+    private VerificationStatus verificationStatus;
 
     @Column(name = "commission_rate_pct")
+    @Builder.Default
     private BigDecimal commissionRatePct = BigDecimal.valueOf(10.00);
 
     @Column(name = "average_rating")
+    @Builder.Default
     private BigDecimal averageRating = BigDecimal.valueOf(0);
 
     @Column(name = "total_reviews")
     private Integer totalReviews;
 
     @Column(name = "is_accepting_bookings")
+    @Builder.Default
     private boolean isAcceptingBookings = false;
 
     @CreationTimestamp
