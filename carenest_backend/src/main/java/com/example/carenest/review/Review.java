@@ -1,19 +1,23 @@
 package com.example.carenest.review;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-//importing the required packages
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.example.carenest.User;
 import com.example.carenest.agency.Agency;
 import com.example.carenest.booking.Booking;
+import com.example.carenest.family.FamilyProfile;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -21,14 +25,16 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-//Defining the Review entity and mapping it to the "reviews" table in the database.
 @Entity
-@Table
+@Table(name = "reviews")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Review {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne
@@ -36,8 +42,8 @@ public class Review {
     private Booking booking;
 
     @ManyToOne
-    @JoinColumn(name = "reviewer_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "family_id", nullable = false)
+    private FamilyProfile family;
 
     @ManyToOne
     @JoinColumn(name = "agency_id", nullable = false)
@@ -48,10 +54,10 @@ public class Review {
     @Column(name = "rating", nullable = false)
     private Integer rating;
 
-    @Column(name = "comment")
+    @Column(name = "comment", length = 1000)
     private String comment;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }

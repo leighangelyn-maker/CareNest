@@ -10,5 +10,5 @@ import java.util.UUID;
 @Repository
 public interface FamilyAddressRepository extends JpaRepository<FamilyAddress, UUID> {
 
-    List<FamilyAddress> findByFamilyId(UUID familyId);
+    List<FamilyAddress> findByFamilyProfileId(UUID familyId);
 }

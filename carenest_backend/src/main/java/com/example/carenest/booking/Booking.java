@@ -6,6 +6,11 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,7 +18,7 @@ import com.example.carenest.agency.Agency;
 import com.example.carenest.common.ServiceCategory;
 import com.example.carenest.family.FamilyAddress;
 import com.example.carenest.family.FamilyProfile;
-import com.example.carenest.worker.Worker;
+import com.example.carenest.worker.WorkerProfile;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +31,10 @@ import jakarta.persistence.Table;
 //Defining the Booking entity and mapping it to the "bookings" table in the database.
 @Entity
 @Table
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Booking {
 
     @Id
@@ -42,7 +51,7 @@ public class Booking {
 
     @ManyToOne
     @JoinColumn(name = "worker_id", nullable = false)
-    private Worker worker;
+    private WorkerProfile worker;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)

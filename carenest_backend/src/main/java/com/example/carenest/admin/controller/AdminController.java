@@ -4,7 +4,7 @@ import com.example.carenest.admin.dto.AgencyVerificationRequest;
 import com.example.carenest.admin.dto.PlatformStatsResponse;
 import com.example.carenest.admin.dto.UserStatusUpdateRequest;
 import com.example.carenest.admin.service.AdminService;
-import com.example.carenest.agency.model.Agency;
+import com.example.carenest.agency.Agency;
 import com.example.carenest.auth.model.User;
 import com.example.carenest.common.dto.response.ApiResponse;
 import com.example.carenest.documents.model.VerificationDocument;
@@ -133,7 +133,6 @@ public class AdminController {
             @RequestParam(required = false) String rejectionReason,
             Authentication authentication) {
 
-        String adminEmail = authentication.getName();
         // You can fetch the admin user to get their ID
         // For now, using a dummy UUID - you should get the actual admin ID
 

@@ -3,7 +3,7 @@ package com.example.carenest.admin.service;
 import com.example.carenest.admin.dto.AgencyVerificationRequest;
 import com.example.carenest.admin.dto.PlatformStatsResponse;
 import com.example.carenest.admin.dto.UserStatusUpdateRequest;
-import com.example.carenest.agency.model.Agency;
+import com.example.carenest.agency.Agency;
 import com.example.carenest.auth.model.User;
 import com.example.carenest.documents.model.VerificationDocument;
 import org.springframework.data.domain.Page;

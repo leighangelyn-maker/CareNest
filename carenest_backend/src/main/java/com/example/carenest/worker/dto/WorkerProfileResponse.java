@@ -1,6 +1,5 @@
 package com.example.carenest.worker.dto;
 
-import com.example.carenest.worker.model.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.UUID;
+
+import com.example.carenest.worker.VerificationStatus;
 
 @Data
 @Builder

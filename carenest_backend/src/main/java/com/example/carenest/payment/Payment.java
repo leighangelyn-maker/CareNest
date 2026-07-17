@@ -5,6 +5,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -22,6 +27,10 @@ import jakarta.persistence.Table;
 //Defining the Payment entity and mapping it to the "payments" table in the database.
 @Entity
 @Table(name = "payments")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Payment {
 
     @Id
@@ -40,6 +49,7 @@ public class Payment {
     private Integer amountMinorUnits;
 
     @Column(name = "currency")
+    @Builder.Default
     private String currency = "GHS";
 
     @Column(name = "status", nullable = false)

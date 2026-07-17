@@ -1,6 +1,6 @@
 package com.example.carenest.admin.dto;
 
-import com.example.carenest.agency.model.VerificationStatus;
+import com.example.carenest.agency.VerificationStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

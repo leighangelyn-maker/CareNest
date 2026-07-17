@@ -1,8 +1,8 @@
 package com.example.carenest.auth;
 
-import com.example.carenest.agency.model.Agency;
-import com.example.carenest.agency.model.AgencyStatus;
-import com.example.carenest.agency.model.VerificationStatus;
+import com.example.carenest.agency.Agency;
+import com.example.carenest.agency.AgencyStatus;
+import com.example.carenest.agency.VerificationStatus;
 import com.example.carenest.agency.repository.AgencyRepository;
 import com.example.carenest.auth.dto.*;
 import com.example.carenest.auth.model.User;
@@ -12,6 +12,7 @@ import com.example.carenest.config.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import java.math.BigDecimal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -124,7 +124,7 @@ public class AuthServiceImpl implements AuthService {
                     .email(request.getAgencyEmail())
                     .description(request.getAgencyDescription())
                     .isAcceptingBookings(true)
-                    .averageRating(0.0)
+                    .averageRating(BigDecimal.valueOf(0.0))
                     .totalReviews(0)
                     .status(AgencyStatus.ACTIVE)
                     .verificationStatus(VerificationStatus.PENDING)

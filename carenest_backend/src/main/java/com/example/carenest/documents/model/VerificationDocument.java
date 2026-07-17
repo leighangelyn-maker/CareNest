@@ -1,6 +1,5 @@
 package com.example.carenest.documents.model;
 
-import com.example.carenest.worker.model.WorkerProfile;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import com.example.carenest.worker.WorkerProfile;
 
 @Entity
 @Table(name = "verification_documents")

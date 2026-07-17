@@ -1,7 +1,8 @@
 package com.example.carenest.worker.repository;
 
-import com.example.carenest.worker.model.WorkerProfile;
-import com.example.carenest.worker.model.VerificationStatus;
+import com.example.carenest.worker.VerificationStatus;
+import com.example.carenest.worker.WorkerProfile;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

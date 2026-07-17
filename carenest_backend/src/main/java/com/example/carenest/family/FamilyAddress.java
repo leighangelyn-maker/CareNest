@@ -4,8 +4,12 @@ package com.example.carenest.family;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Changelog.Timestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +22,10 @@ import jakarta.persistence.Table;
 //Defining the FamilyAddress entity and mapping it to the "family_addresses" table in the database. 
 @Entity
 @Table(name = "family_addresses")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class FamilyAddress {
 
     @Id
@@ -44,6 +52,7 @@ public class FamilyAddress {
     private String region;
 
     @Column(name = "country")
+    @Builder.Default
     private String country = "Ghana";
 
     @Column(name = "latitude")
