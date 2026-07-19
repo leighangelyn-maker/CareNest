@@ -4,8 +4,10 @@ import com.example.carenest.auth.model.User;
 import com.example.carenest.auth.UserRepository;
 import com.example.carenest.common.dto.response.ApiResponse;
 import com.example.carenest.worker.dto.WorkerAvailabilityRequest;
+import com.example.carenest.worker.dto.WorkerAvailabilityResponse;
 import com.example.carenest.worker.dto.WorkerProfileRequest;
 import com.example.carenest.worker.dto.WorkerProfileResponse;
+import com.example.carenest.worker.service.WorkerAvailabilityService;
 import com.example.carenest.worker.service.WorkerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +34,8 @@ import java.util.UUID;
 public class WorkerController {
 
     private final WorkerService workerService;
-    private final UserRepository userRepository;  // ← ADD THIS
+    private final WorkerAvailabilityService workerAvailabilityService;
+    private final UserRepository userRepository;
 
     @PostMapping("/profile")
     @PreAuthorize("hasRole('AGENCY_ADMIN')")
@@ -135,6 +138,40 @@ public class WorkerController {
             return ResponseEntity.ok(ApiResponse.success(response, "Worker availability updated successfully"));
         } catch (Exception e) {
             log.error("❌ Error updating availability: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to update availability: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/profile/{workerId}/availability")
+    @Operation(summary = "Get worker availability")
+    public ResponseEntity<ApiResponse<WorkerAvailabilityResponse>> getWorkerAvailability(
+            @PathVariable UUID workerId) {
+        try {
+            WorkerAvailabilityResponse response = workerAvailabilityService.getWorkerAvailability(workerId);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("❌ Error getting worker availability: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Worker not found"));
+        }
+    }
+
+    @PutMapping("/profile/{workerId}/availability")
+    @PreAuthorize("hasRole('AGENCY_ADMIN')")
+    @Operation(summary = "Update worker availability status (Agency Admin only)")
+    public ResponseEntity<ApiResponse<WorkerAvailabilityResponse>> updateWorkerAvailability(
+            @PathVariable UUID workerId,
+            @Valid @RequestBody WorkerAvailabilityRequest request,
+            Authentication authentication) {
+
+        log.info("📅 Updating availability status for worker: {}", workerId);
+
+        try {
+            WorkerAvailabilityResponse response = workerAvailabilityService.updateWorkerAvailability(workerId, request);
+            return ResponseEntity.ok(ApiResponse.success(response, "Worker availability updated successfully"));
+        } catch (Exception e) {
+            log.error("❌ Error updating availability status: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to update availability: " + e.getMessage()));
         }

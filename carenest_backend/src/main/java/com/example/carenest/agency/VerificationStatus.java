@@ -1,6 +1,7 @@
-package com.example.carenest.worker.model;
+package com.example.carenest.agency;
 
 public enum VerificationStatus {
+    UNVERIFIED,
     PENDING,
     VERIFIED,
     REJECTED

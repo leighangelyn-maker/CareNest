@@ -6,7 +6,7 @@ import com.example.carenest.documents.model.DocumentStatus;
 import com.example.carenest.documents.model.DocumentType;
 import com.example.carenest.documents.model.VerificationDocument;
 import com.example.carenest.documents.repository.VerificationDocumentRepository;
-import com.example.carenest.worker.model.WorkerProfile;
+import com.example.carenest.worker.WorkerProfile;
 import com.example.carenest.worker.repository.WorkerProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

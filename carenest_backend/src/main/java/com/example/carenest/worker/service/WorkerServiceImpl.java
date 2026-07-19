@@ -1,12 +1,12 @@
 package com.example.carenest.worker.service;
 
-import com.example.carenest.agency.model.Agency;
+import com.example.carenest.agency.Agency;
 import com.example.carenest.agency.repository.AgencyRepository;
+import com.example.carenest.worker.VerificationStatus;
+import com.example.carenest.worker.WorkerProfile;
 import com.example.carenest.worker.dto.WorkerAvailabilityRequest;
 import com.example.carenest.worker.dto.WorkerProfileRequest;
 import com.example.carenest.worker.dto.WorkerProfileResponse;
-import com.example.carenest.worker.model.VerificationStatus;
-import com.example.carenest.worker.model.WorkerProfile;
 import com.example.carenest.worker.repository.WorkerProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
