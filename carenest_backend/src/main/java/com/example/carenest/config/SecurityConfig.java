@@ -54,15 +54,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     // Auth endpoints - PUBLIC
-                    "/auth/register",
-                    "/auth/register-agency", 
-                    "/auth/register-admin",
-                    "/auth/login",
-                    "/auth/refresh",
-                    "/auth/logout",
-                    "/auth/verify-email",
-                    "/auth/forgot-password",
-                    "/auth/reset-password",
+                    "/auth/**",
                     // H2 Console - PUBLIC (dev only)
                     "/h2-console/**",
                     // Swagger - PUBLIC
@@ -71,10 +63,10 @@ public class SecurityConfig {
                     "/api-docs/**",
                     // Test - PUBLIC
                     "/public-test",
-                    // Document endpoints - PUBLIC (GET only)
+                    // Document endpoints - PUBLIC
                     "/documents/**"
                 ).permitAll()
-                // Everything else requires authentication (handled by @PreAuthorize)
+                // Everything else requires authentication
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
