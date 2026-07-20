@@ -12,11 +12,11 @@ import java.util.UUID;
 
 public interface DocumentService {
 
-    DocumentResponse uploadDocument(UUID workerId, MultipartFile file, DocumentType documentType, String description);
+    DocumentResponse uploadDocument(UUID agencyId, MultipartFile file, DocumentType documentType, String description);
 
     DocumentResponse getDocument(UUID documentId);
 
-    List<DocumentResponse> getWorkerDocuments(UUID workerId);
+    List<DocumentResponse> getAgencyDocuments(UUID agencyId);
 
     Page<DocumentResponse> getPendingDocuments(Pageable pageable);
 
@@ -24,5 +24,5 @@ public interface DocumentService {
 
     void deleteDocument(UUID documentId);
 
-    boolean hasWorkerUploadedDocumentType(UUID workerId, DocumentType documentType);
+    boolean hasAgencyUploadedDocumentType(UUID agencyId, DocumentType documentType);
 }

@@ -6,8 +6,8 @@ import com.example.carenest.documents.model.DocumentStatus;
 import com.example.carenest.documents.model.DocumentType;
 import com.example.carenest.documents.model.VerificationDocument;
 import com.example.carenest.documents.repository.VerificationDocumentRepository;
-import com.example.carenest.worker.model.WorkerProfile;
-import com.example.carenest.worker.repository.WorkerProfileRepository;
+import com.example.carenest.agency.Agency;
+import com.example.carenest.agency.repository.AgencyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +25,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;  // ← ADD THIS IMPORT
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;  // ← ADD THIS IMPORT
 public class DocumentServiceImpl implements DocumentService {
 
     private final VerificationDocumentRepository documentRepository;
-    private final WorkerProfileRepository workerProfileRepository;
+    private final AgencyRepository agencyRepository;
 
     @Value("${storage.upload-dir:uploads}")
     private String uploadDir;
@@ -50,20 +50,20 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentResponse uploadDocument(UUID workerId, MultipartFile file, DocumentType documentType, String description) {
-        log.info("Uploading document for worker: {}, type: {}", workerId, documentType);
+    public DocumentResponse uploadDocument(UUID agencyId, MultipartFile file, DocumentType documentType, String description) {
+        log.info("Uploading document for agency: {}, type: {}", agencyId, documentType);
 
-        // Validate worker exists
-        WorkerProfile worker = workerProfileRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker not found with ID: " + workerId));
+        // Validate agency exists
+        Agency agency = agencyRepository.findById(agencyId)
+                .orElseThrow(() -> new RuntimeException("Agency not found with ID: " + agencyId));
 
         // Validate file
         validateFile(file);
 
         try {
-            // Create worker's document directory
-            String workerDocDir = documentsDir + "/" + workerId;
-            Path uploadPath = Paths.get(uploadDir, workerDocDir);
+            // Create agency's document directory
+            String agencyDocDir = documentsDir + "/" + agencyId;
+            Path uploadPath = Paths.get(uploadDir, agencyDocDir);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
@@ -80,11 +80,11 @@ public class DocumentServiceImpl implements DocumentService {
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
             
             // Build file URL
-            String fileUrl = "/uploads/" + workerDocDir + "/" + filename;
+            String fileUrl = "/uploads/" + agencyDocDir + "/" + filename;
 
             // Create document record
             VerificationDocument document = VerificationDocument.builder()
-                    .worker(worker)
+                    .agency(agency)
                     .documentType(documentType)
                     .documentName(originalFilename != null ? originalFilename : filename)
                     .fileUrl(fileUrl)
@@ -113,11 +113,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<DocumentResponse> getWorkerDocuments(UUID workerId) {
-        return documentRepository.findByWorkerId(workerId)
+    public List<DocumentResponse> getAgencyDocuments(UUID agencyId) {
+        return documentRepository.findByAgencyId(agencyId)
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());  // ← Fixed: Added Collectors import
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -178,8 +178,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public boolean hasWorkerUploadedDocumentType(UUID workerId, DocumentType documentType) {
-        return documentRepository.existsByWorkerIdAndDocumentType(workerId, documentType.name());
+    public boolean hasAgencyUploadedDocumentType(UUID agencyId, DocumentType documentType) {
+        return documentRepository.existsByAgencyIdAndDocumentType(agencyId, documentType.name());
     }
 
     private void validateFile(MultipartFile file) {
@@ -198,13 +198,12 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     private DocumentResponse mapToResponse(VerificationDocument document) {
-        WorkerProfile worker = document.getWorker();
+        Agency agency = document.getAgency();
         
         return DocumentResponse.builder()
                 .id(document.getId())
-                .workerId(worker.getId())
-                .workerFirstName(worker.getFirstName())
-                .workerLastName(worker.getLastName())
+                .agencyId(agency.getId())
+                .agencyName(agency.getName())
                 .documentType(document.getDocumentType())
                 .documentName(document.getDocumentName())
                 .fileUrl(document.getFileUrl())

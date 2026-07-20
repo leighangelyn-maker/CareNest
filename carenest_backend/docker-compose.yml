@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: carenest-postgres
+    environment:
+      POSTGRES_DB: carenest_db
+      POSTGRES_USER: carenest_user
+      POSTGRES_PASSWORD: your-strong-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - carenest-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carenest_user -d carenest_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: carenest-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: your-production-secret-key-here-at-least-32-characters
+      JWT_EXPIRATION: 3600000
+      JWT_REFRESH_EXPIRATION: 604800000
+      DB_URL: jdbc:postgresql://postgres:5432/carenest_db
+      DB_USERNAME: carenest_user
+      DB_PASSWORD: your-strong-password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - carenest-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  carenest-network:
+    driver: bridge

@@ -1,7 +1,7 @@
 package com.example.carenest.agency.repository;
 
-import com.example.carenest.agency.model.Agency;
-import com.example.carenest.agency.model.VerificationStatus;
+import com.example.carenest.agency.Agency;
+import com.example.carenest.agency.VerificationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +13,5 @@ public interface AgencyRepository extends JpaRepository<Agency, UUID> {
     Optional<Agency> findBySlug(String slug);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
-    
     long countByVerificationStatus(VerificationStatus status);
 }

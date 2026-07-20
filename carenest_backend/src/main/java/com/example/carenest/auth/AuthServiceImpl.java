@@ -1,8 +1,8 @@
 package com.example.carenest.auth;
 
-import com.example.carenest.agency.model.Agency;
-import com.example.carenest.agency.model.AgencyStatus;
-import com.example.carenest.agency.model.VerificationStatus;
+import com.example.carenest.agency.Agency;
+import com.example.carenest.agency.AgencyStatus;
+import com.example.carenest.agency.VerificationStatus;
 import com.example.carenest.agency.repository.AgencyRepository;
 import com.example.carenest.auth.dto.*;
 import com.example.carenest.auth.model.User;
@@ -12,15 +12,16 @@ import com.example.carenest.config.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import java.math.BigDecimal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.carenest.common.exception.DuplicateResourceException;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -39,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Registering user: {}", request.getEmail());
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new DuplicateResourceException("Email already registered");
         }
 
         if (userRepository.existsByPhone(request.getPhone())) {
@@ -110,30 +111,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new RuntimeException("Agency phone already registered");
             }
 
-            // Generate slug from agency name
-            String slug = request.getAgencyName()
-                    .toLowerCase()
-                    .replaceAll("[^a-z0-9]", "-")
-                    .replaceAll("-+", "-");
-
-            // Create Agency first
-            Agency agency = Agency.builder()
-                    .name(request.getAgencyName())
-                    .slug(slug)
-                    .phone(request.getAgencyPhone())
-                    .email(request.getAgencyEmail())
-                    .description(request.getAgencyDescription())
-                    .isAcceptingBookings(true)
-                    .averageRating(0.0)
-                    .totalReviews(0)
-                    .status(AgencyStatus.ACTIVE)
-                    .verificationStatus(VerificationStatus.PENDING)
-                    .build();
-
-            agency = agencyRepository.save(agency);
-            log.info("Agency created successfully: {}", agency.getId());
-
-            // Create User (Agency Admin)
+            // Create User (Agency Admin) FIRST — Agency requires a valid user_id
             User user = User.builder()
                     .email(request.getEmail())
                     .phone(request.getPhone())
@@ -142,12 +120,39 @@ public class AuthServiceImpl implements AuthService {
                     .lastName("Agency")
                     .role(Role.AGENCY_ADMIN)
                     .status(UserStatus.PENDING_VERIFICATION)
-                    .agencyId(agency.getId())
                     .failedLoginAttempts(0)
                     .build();
 
             user = userRepository.save(user);
             log.info("Agency admin user created successfully: {}", user.getEmail());
+
+            // Generate slug from agency name
+            String slug = request.getAgencyName()
+                    .toLowerCase()
+                    .replaceAll("[^a-z0-9]", "-")
+                    .replaceAll("-+", "-");
+
+            // Create Agency, linking it to the user we just created
+            Agency agency = Agency.builder()
+                    .user(user)
+                    .name(request.getAgencyName())
+                    .slug(slug)
+                    .phone(request.getAgencyPhone())
+                    .email(request.getAgencyEmail())
+                    .description(request.getAgencyDescription())
+                    .isAcceptingBookings(true)
+                    .averageRating(BigDecimal.valueOf(0.0))
+                    .totalReviews(0)
+                    .status(AgencyStatus.ACTIVE)
+                    .verificationStatus(VerificationStatus.PENDING)
+                    .build();
+
+            agency = agencyRepository.save(agency);
+            log.info("Agency created successfully: {}", agency.getId());
+
+            // Now link the user back to the agency
+            user.setAgencyId(agency.getId());
+            user = userRepository.save(user);
 
             // Generate tokens
             String accessToken = jwtUtils.generateAccessToken(
