@@ -2,7 +2,6 @@ package com.example.carenest.agency;
 
 import com.example.carenest.agency.dto.AgencyResponse;
 import com.example.carenest.agency.dto.AgencySummaryResponse;
-import com.example.carenest.agency.dto.WorkerSummaryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
@@ -30,10 +29,5 @@ public class AgencyController {
     @GetMapping("/{id}")
     public ResponseEntity<AgencyResponse> getAgencyProfile(@PathVariable UUID id) {
         return ResponseEntity.ok(agencyService.getAgencyProfile(id));
-    }
-
-    @GetMapping("/{id}/workers")
-    public ResponseEntity<List<WorkerSummaryResponse>> getAgencyWorkers(@PathVariable UUID id) {
-        return ResponseEntity.ok(agencyService.getAgencyWorkers(id));
     }
 }

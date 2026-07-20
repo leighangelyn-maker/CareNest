@@ -17,9 +17,8 @@ import java.util.UUID;
 public class DocumentResponse {
 
     private UUID id;
-    private UUID workerId;           // ← Changed from userId
-    private String workerFirstName;  // ← Added
-    private String workerLastName;   // ← Added
+    private UUID agencyId;
+    private String agencyName;
     private DocumentType documentType;
     private String documentName;
     private String fileUrl;

@@ -69,11 +69,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         log.debug("Checking shouldNotFilter for path: {}", path);
         
-        // ONLY skip JWT validation for truly public endpoints
+        // Skip JWT validation for public endpoints
         if (path.startsWith("/auth/register") ||
             path.startsWith("/auth/register-agency") ||
             path.startsWith("/auth/register-admin") ||
             path.startsWith("/auth/login") ||
+            path.startsWith("/error") ||
             path.startsWith("/auth/refresh") ||
             path.startsWith("/auth/logout") ||
             path.startsWith("/auth/verify-email") ||
@@ -81,14 +82,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.startsWith("/auth/reset-password") ||
             path.startsWith("/h2-console") ||
             path.startsWith("/swagger-ui") ||
-            path.startsWith("/swagger-ui.html") ||  // ← ADD THIS
+            path.startsWith("/swagger-ui.html") ||
             path.startsWith("/v3/api-docs") ||
             path.startsWith("/api-docs") ||
-            path.startsWith("/public-test") ||
-            path.startsWith("/documents/")) {
+            path.startsWith("/public-test")) {
             return true;
         }
         
-        return false;
+        return false;  // All other endpoints need authentication
     }
 }

@@ -13,7 +13,6 @@ import com.example.carenest.auth.UserRepository;
 import com.example.carenest.documents.model.DocumentStatus;
 import com.example.carenest.documents.model.VerificationDocument;
 import com.example.carenest.documents.repository.VerificationDocumentRepository;
-import com.example.carenest.worker.repository.WorkerProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,7 +31,6 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final AgencyRepository agencyRepository;
     private final VerificationDocumentRepository documentRepository;
-    private final WorkerProfileRepository workerProfileRepository;
 
     // ==================== USER MANAGEMENT ====================
 
@@ -59,10 +57,8 @@ public class AdminServiceImpl implements AdminService {
 
         user.setStatus(request.getStatus());
 
-        // If suspending, add reason in a separate field or log it
         if (request.getStatus() == UserStatus.SUSPENDED) {
             log.info("User suspended: {} - Reason: {}", userId, request.getReason());
-            // You can add a suspension_reason field to User entity if needed
         }
 
         user = userRepository.save(user);
@@ -97,8 +93,6 @@ public class AdminServiceImpl implements AdminService {
         agency.setVerificationStatus(request.getVerificationStatus());
 
         if (request.getVerificationStatus() == VerificationStatus.VERIFIED) {
-            // Also update the agency admin's status to ACTIVE
-            // Find the agency admin user
             userRepository.findByAgencyId(agencyId)
                     .ifPresent(user -> {
                         user.setStatus(UserStatus.ACTIVE);
@@ -109,7 +103,6 @@ public class AdminServiceImpl implements AdminService {
 
         if (request.getVerificationStatus() == VerificationStatus.REJECTED) {
             log.info("Agency rejected: {} - Reason: {}", agencyId, request.getReason());
-            // You can add a rejection_reason field to Agency entity if needed
         }
 
         agency = agencyRepository.save(agency);
@@ -128,9 +121,6 @@ public class AdminServiceImpl implements AdminService {
 
         agency.setStatus(AgencyStatus.SUSPENDED);
         agency = agencyRepository.save(agency);
-
-        // Also suspend all users belonging to this agency
-        // This would require a custom query in UserRepository
 
         log.info("Agency suspended: {}", agencyId);
         return agency;
@@ -169,9 +159,6 @@ public class AdminServiceImpl implements AdminService {
         document = documentRepository.save(document);
         log.info("Document verified: {}", documentId);
 
-        // If document is verified, check if worker has all required documents
-        // You can add logic here to update worker verification status
-
         return document;
     }
 
@@ -183,23 +170,17 @@ public class AdminServiceImpl implements AdminService {
 
         long totalUsers = userRepository.count();
         long totalAgencies = agencyRepository.count();
-        long totalWorkers = workerProfileRepository.count();
         long totalDocuments = documentRepository.count();
         long pendingDocuments = documentRepository.countByStatus(DocumentStatus.PENDING);
 
-        // Get active and suspended users
         long activeUsers = userRepository.countByStatus(UserStatus.ACTIVE);
         long suspendedUsers = userRepository.countByStatus(UserStatus.SUSPENDED);
 
-        // Get pending agencies
         long pendingAgencies = agencyRepository.countByVerificationStatus(VerificationStatus.PENDING);
-
-        // For total bookings - you'll need a BookingRepository
 
         return PlatformStatsResponse.builder()
                 .totalUsers(totalUsers)
                 .totalAgencies(totalAgencies)
-                .totalWorkers(totalWorkers)
                 .totalBookings(0) // Will be updated when booking module is added
                 .totalDocuments(totalDocuments)
                 .pendingDocuments(pendingDocuments)

@@ -18,7 +18,6 @@ import com.example.carenest.agency.Agency;
 import com.example.carenest.common.ServiceCategory;
 import com.example.carenest.family.FamilyAddress;
 import com.example.carenest.family.FamilyProfile;
-import com.example.carenest.worker.WorkerProfile;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,10 +47,6 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "agency_id", nullable = false)
     private Agency agency;
-
-    @ManyToOne
-    @JoinColumn(name = "worker_id", nullable = false)
-    private WorkerProfile worker;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)

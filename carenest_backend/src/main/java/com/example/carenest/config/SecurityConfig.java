@@ -53,8 +53,16 @@ public class SecurityConfig {
             .cors(cors -> cors.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    // Auth endpoints - PUBLIC
-                    "/auth/**",
+                    // Auth endpoints - PUBLIC (No authentication required)
+                    "/auth/register",
+                    "/auth/register-agency",
+                    "/auth/register-admin",
+                    "/auth/login",
+                    "/auth/refresh",
+                    "/auth/logout",
+                    "/auth/verify-email",
+                    "/auth/forgot-password",
+                    "/auth/reset-password",
                     // H2 Console - PUBLIC (dev only)
                     "/h2-console/**",
                     // Swagger - PUBLIC
@@ -64,8 +72,7 @@ public class SecurityConfig {
                     "/api-docs/**",
                     // Test - PUBLIC
                     "/public-test",
-                    // Document endpoints - PUBLIC
-                    "/documents/**"
+                    "/error" 
                 ).permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()

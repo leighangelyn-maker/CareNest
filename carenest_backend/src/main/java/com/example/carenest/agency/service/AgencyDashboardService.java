@@ -3,14 +3,13 @@ package com.example.carenest.agency.service;
 import com.example.carenest.agency.dto.AgencyDashboardResponse;
 import com.example.carenest.agency.dto.AgencyRevenueResponse;
 import com.example.carenest.agency.repository.AgencyRepository;
+import com.example.carenest.agency.repository.AgencyPayoutRepository;
 import com.example.carenest.booking.Booking;
 import com.example.carenest.booking.BookingStatus;
 import com.example.carenest.booking.repository.BookingRepository;
-import com.example.carenest.payment.AgencyPayout;
-import com.example.carenest.payment.PayoutStatus;
-import com.example.carenest.payment.repository.AgencyPayoutRepository;
-import com.example.carenest.worker.WorkerProfile;
-import com.example.carenest.worker.repository.WorkerProfileRepository;
+import com.example.carenest.agency.repository.AgencyPayoutRepository;
+import com.example.carenest.agency.AgencyPayout;
+import com.example.carenest.agency.PayoutStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ public class AgencyDashboardService {
 
     private final AgencyRepository agencyRepository;
     private final BookingRepository bookingRepository;
-    private final WorkerProfileRepository workerProfileRepository;
     private final AgencyPayoutRepository agencyPayoutRepository;
 
     public AgencyDashboardResponse getDashboardStats(UUID agencyId) {
@@ -51,13 +49,6 @@ public class AgencyDashboardService {
                 .filter(b -> b.getStatus() == BookingStatus.CANCELLED)
                 .count();
 
-        // Get worker stats
-        List<WorkerProfile> workers = workerProfileRepository.findByAgencyId(agencyId);
-        Integer totalWorkers = workers.size();
-        Integer activeWorkers = (int) workers.stream()
-                .filter(w -> w.getIsAvailable() != null && w.getIsAvailable())
-                .count();
-
         // Get payout stats
         List<AgencyPayout> payouts = agencyPayoutRepository.findByAgencyId(agencyId);
         Integer pendingPayouts = (int) payouts.stream()
@@ -75,8 +66,6 @@ public class AgencyDashboardService {
                 .activeBookings(activeBookings)
                 .completedBookings(completedBookings)
                 .cancelledBookings(cancelledBookings)
-                .totalWorkers(totalWorkers)
-                .activeWorkers(activeWorkers)
                 .pendingPayouts(pendingPayouts)
                 .totalRevenueMinorUnits(totalRevenue)
                 .totalRevenueDisplay(formatCurrency(totalRevenue))

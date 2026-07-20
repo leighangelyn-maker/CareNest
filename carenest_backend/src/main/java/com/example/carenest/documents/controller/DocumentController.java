@@ -39,37 +39,34 @@ public class DocumentController {
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AGENCY_ADMIN')")
-    @Operation(summary = "Upload a verification document for a worker (Agency Admin only)")
+    @Operation(summary = "Upload a verification document for an agency (Agency Admin only)")
     public ResponseEntity<ApiResponse<DocumentResponse>> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam("documentType") DocumentType documentType,
-            @RequestParam("workerId") UUID workerId,
+            @RequestParam("agencyId") UUID agencyId,
             @RequestParam(value = "description", required = false) String description,
             Authentication authentication) {
 
-        log.info("📤 Uploading document for worker: {}", workerId);
+        log.info("📤 Uploading document for agency: {}", agencyId);
 
         User admin = getUserFromAuthentication(authentication);
-        
-        // Validate admin belongs to the same agency as the worker
-        // You need to add this validation in DocumentService
-        
+
         DocumentResponse response = documentService.uploadDocument(
-                workerId, file, documentType, description
+                agencyId, file, documentType, description
         );
         
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Document uploaded successfully"));
     }
 
-    @GetMapping("/worker/{workerId}")
+    @GetMapping("/agency/{agencyId}")
     @PreAuthorize("hasRole('AGENCY_ADMIN')")
-    @Operation(summary = "Get all documents for a worker (Agency Admin only)")
-    public ResponseEntity<ApiResponse<List<DocumentResponse>>> getWorkerDocuments(
-            @PathVariable UUID workerId,
+    @Operation(summary = "Get all documents for an agency (Agency Admin only)")
+    public ResponseEntity<ApiResponse<List<DocumentResponse>>> getAgencyDocuments(
+            @PathVariable UUID agencyId,
             Authentication authentication) {
 
-        List<DocumentResponse> responses = documentService.getWorkerDocuments(workerId);
+        List<DocumentResponse> responses = documentService.getAgencyDocuments(agencyId);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
@@ -122,15 +119,15 @@ public class DocumentController {
         return ResponseEntity.ok(ApiResponse.success("Document deleted successfully"));
     }
 
-    @GetMapping("/check/{workerId}/{documentType}")
+    @GetMapping("/check/{agencyId}/{documentType}")
     @PreAuthorize("hasRole('AGENCY_ADMIN')")
-    @Operation(summary = "Check if a worker has uploaded a specific document type")
+    @Operation(summary = "Check if an agency has uploaded a specific document type")
     public ResponseEntity<ApiResponse<Boolean>> checkDocumentExists(
-            @PathVariable UUID workerId,
+            @PathVariable UUID agencyId,
             @PathVariable DocumentType documentType,
             Authentication authentication) {
 
-        boolean exists = documentService.hasWorkerUploadedDocumentType(workerId, documentType);
+        boolean exists = documentService.hasAgencyUploadedDocumentType(agencyId, documentType);
         return ResponseEntity.ok(ApiResponse.success(exists));
     }
 

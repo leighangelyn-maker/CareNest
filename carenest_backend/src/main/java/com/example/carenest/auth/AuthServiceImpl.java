@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.carenest.common.exception.DuplicateResourceException;
 
 import java.time.LocalDateTime;
 
@@ -39,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Registering user: {}", request.getEmail());
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new DuplicateResourceException("Email already registered");
         }
 
         if (userRepository.existsByPhone(request.getPhone())) {
@@ -110,14 +111,30 @@ public class AuthServiceImpl implements AuthService {
                 throw new RuntimeException("Agency phone already registered");
             }
 
+            // Create User (Agency Admin) FIRST — Agency requires a valid user_id
+            User user = User.builder()
+                    .email(request.getEmail())
+                    .phone(request.getPhone())
+                    .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .firstName(request.getAgencyName())
+                    .lastName("Agency")
+                    .role(Role.AGENCY_ADMIN)
+                    .status(UserStatus.PENDING_VERIFICATION)
+                    .failedLoginAttempts(0)
+                    .build();
+
+            user = userRepository.save(user);
+            log.info("Agency admin user created successfully: {}", user.getEmail());
+
             // Generate slug from agency name
             String slug = request.getAgencyName()
                     .toLowerCase()
                     .replaceAll("[^a-z0-9]", "-")
                     .replaceAll("-+", "-");
 
-            // Create Agency first
+            // Create Agency, linking it to the user we just created
             Agency agency = Agency.builder()
+                    .user(user)
                     .name(request.getAgencyName())
                     .slug(slug)
                     .phone(request.getAgencyPhone())
@@ -133,21 +150,9 @@ public class AuthServiceImpl implements AuthService {
             agency = agencyRepository.save(agency);
             log.info("Agency created successfully: {}", agency.getId());
 
-            // Create User (Agency Admin)
-            User user = User.builder()
-                    .email(request.getEmail())
-                    .phone(request.getPhone())
-                    .passwordHash(passwordEncoder.encode(request.getPassword()))
-                    .firstName(request.getAgencyName())
-                    .lastName("Agency")
-                    .role(Role.AGENCY_ADMIN)
-                    .status(UserStatus.PENDING_VERIFICATION)
-                    .agencyId(agency.getId())
-                    .failedLoginAttempts(0)
-                    .build();
-
+            // Now link the user back to the agency
+            user.setAgencyId(agency.getId());
             user = userRepository.save(user);
-            log.info("Agency admin user created successfully: {}", user.getEmail());
 
             // Generate tokens
             String accessToken = jwtUtils.generateAccessToken(

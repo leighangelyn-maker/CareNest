@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.example.carenest.worker.WorkerProfile;
+import com.example.carenest.agency.Agency;
 
 @Entity
 @Table(name = "verification_documents")
@@ -24,8 +24,8 @@ public class VerificationDocument {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "worker_id", nullable = false)
-    private WorkerProfile worker;
+    @JoinColumn(name = "agency_id", nullable = false)
+    private Agency agency;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "document_type", nullable = false)

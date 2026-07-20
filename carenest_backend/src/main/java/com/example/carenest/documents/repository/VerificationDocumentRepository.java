@@ -13,15 +13,15 @@ import java.util.UUID;
 @Repository
 public interface VerificationDocumentRepository extends JpaRepository<VerificationDocument, UUID> {
 
-    List<VerificationDocument> findByWorkerId(UUID workerId);
+    List<VerificationDocument> findByAgencyId(UUID agencyId);
 
     Page<VerificationDocument> findByStatus(DocumentStatus status, Pageable pageable);
 
-    List<VerificationDocument> findByWorkerIdAndStatus(UUID workerId, DocumentStatus status);
+    List<VerificationDocument> findByAgencyIdAndStatus(UUID agencyId, DocumentStatus status);
 
-    boolean existsByWorkerIdAndDocumentType(UUID workerId, String documentType);
+    boolean existsByAgencyIdAndDocumentType(UUID agencyId, String documentType);
 
     long countByStatus(DocumentStatus status);
 
-    long countByWorkerId(UUID workerId);
+    long countByAgencyId(UUID agencyId);
 }
