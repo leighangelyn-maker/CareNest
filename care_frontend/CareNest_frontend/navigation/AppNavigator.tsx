@@ -14,10 +14,14 @@ import AgencyHomeScreen from '../screens/AgencyHomeScreen';
 import AgencySearchScreen from '../screens/AgencySearchScreen';
 import AgencyProfileScreen from '../screens/AgencyProfileScreen';
 import ChatScreen from '../screens/ChatScreen';
+import BookingHistoryScreen from '../screens/BookingHistoryScreen';
+import RatingScreen from '../screens/RatingScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const BookingStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator();
 const RootStack = createNativeStackNavigator();
 
 function HomeStackScreen() {
@@ -44,6 +48,17 @@ function BookingStackScreen() {
   );
 }
 
+function ProfileStackScreen() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="BookingHistory" component={BookingHistoryScreen} />
+      <ProfileStack.Screen name="Rating" component={RatingScreen} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
 function ClientTabs() {
   return (
     <Tab.Navigator
@@ -57,7 +72,7 @@ function ClientTabs() {
         options={{ tabBarLabel: '🏠 Home' }} />
       <Tab.Screen name="Booking" component={BookingStackScreen}
         options={{ tabBarLabel: '📋 Book' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen}
+      <Tab.Screen name="Profile" component={ProfileStackScreen}
         options={{ tabBarLabel: '👤 Profile' }} />
     </Tab.Navigator>
   );

@@ -28,12 +28,18 @@ export default function ProfileScreen({ navigation }: any) {
           <Row label="Role"  value="Client" />
         </View>
 
-        <TouchableOpacity style={styles.editBtn}>
-          <Text style={styles.editBtnText}>Edit Profile</Text>
+        <TouchableOpacity style={styles.editBtn}
+          onPress={() => navigation.navigate('BookingHistory')}>
+          <Text style={styles.editBtnText}>📋 My Bookings</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.editBtn}
+          onPress={() => navigation.navigate('EditProfile')}>
+          <Text style={styles.editBtnText}>✏️ Edit Profile</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.logoutBtn}
-          onPress={() => navigation.navigate('Login')}>
+          onPress={() => navigation.getParent()?.getParent()?.navigate('Login')}>
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
