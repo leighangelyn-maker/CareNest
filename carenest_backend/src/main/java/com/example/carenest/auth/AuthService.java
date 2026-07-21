@@ -9,4 +9,8 @@ public interface AuthService {
     AuthResponse login(LoginRequest request);
     TokenResponse refreshToken(RefreshTokenRequest request);
     void logout(RefreshTokenRequest request);
+    void verifyEmail(String token);
+    void resendVerification(String email);
 }
+
+

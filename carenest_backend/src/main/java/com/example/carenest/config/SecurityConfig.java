@@ -61,6 +61,7 @@ public class SecurityConfig {
                     "/auth/refresh",
                     "/auth/logout",
                     "/auth/verify-email",
+                    "/auth/resend-verification",
                     "/auth/forgot-password",
                     "/auth/reset-password",
                     // H2 Console - PUBLIC (dev only)

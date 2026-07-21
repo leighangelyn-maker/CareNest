@@ -8,7 +8,9 @@ import com.example.carenest.auth.dto.*;
 import com.example.carenest.auth.model.User;
 import com.example.carenest.auth.model.Role;
 import com.example.carenest.auth.model.UserStatus;
+import com.example.carenest.auth.model.VerificationToken;
 import com.example.carenest.config.JwtUtils;
+import com.example.carenest.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.carenest.common.exception.DuplicateResourceException;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -33,6 +36,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -54,12 +59,14 @@ public class AuthServiceImpl implements AuthService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .role(Role.FAMILY)
-                .status(UserStatus.ACTIVE)
+                .status(UserStatus.PENDING_VERIFICATION)
                 .failedLoginAttempts(0)
                 .build();
 
         user = userRepository.save(user);
         log.info("User registered successfully: {}", user.getEmail());
+
+        createAndSendVerificationToken(user);
 
         String accessToken = jwtUtils.generateAccessToken(
                 user.getEmail(),
@@ -125,6 +132,8 @@ public class AuthServiceImpl implements AuthService {
 
             user = userRepository.save(user);
             log.info("Agency admin user created successfully: {}", user.getEmail());
+
+            createAndSendVerificationToken(user);
 
             // Generate slug from agency name
             String slug = request.getAgencyName()
@@ -199,6 +208,10 @@ public class AuthServiceImpl implements AuthService {
 
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+                throw new RuntimeException("Please verify your email before logging in");
+            }
 
             user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
@@ -329,5 +342,56 @@ public class AuthServiceImpl implements AuthService {
                         .status(user.getStatus())
                         .build())
                 .build();
+    }
+
+    // ==================== EMAIL VERIFICATION ====================
+
+    @Override
+    @Transactional
+    public void verifyEmail(String token) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+
+        if (verificationToken.getUsedAt() != null) {
+            throw new RuntimeException("This verification link has already been used");
+        }
+
+        if (verificationToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification link has expired. Please request a new one.");
+        }
+
+        User user = verificationToken.getUser();
+        user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        verificationToken.setUsedAt(LocalDateTime.now());
+        verificationTokenRepository.save(verificationToken);
+
+        log.info("Email verified for user: {}", user.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void resendVerification(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new RuntimeException("Email is already verified");
+        }
+
+        createAndSendVerificationToken(user);
+    }
+
+    private void createAndSendVerificationToken(User user) {
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = VerificationToken.builder()
+                .user(user)
+                .token(token)
+                .expiresAt(LocalDateTime.now().plusHours(24))
+                .build();
+        verificationTokenRepository.save(verificationToken);
+        emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), token);
     }
 }
