@@ -1,0 +1,874 @@
+{
+  "info": {
+    "name": "CareNest API",
+    "description": "CareNest - On-Demand Nanny & Domestic Staff Booking App",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Family",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ama@example.com\",\n  \"phone\": \"+233241234567\",\n  \"password\": \"TestPass123!\",\n  \"firstName\": \"Ama\",\n  \"lastName\": \"Mensah\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Agency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"agency@brightstars.com\",\n  \"phone\": \"+233201234567\",\n  \"password\": \"AgencyPass123!\",\n  \"agencyName\": \"Bright Stars Domestic Services\",\n  \"agencyPhone\": \"+233201234567\",\n  \"agencyEmail\": \"info@brightstars.gh\",\n  \"agencyDescription\": \"Trusted nanny and housekeeping agency since 2015.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register-agency",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register-agency"]
+            }
+          }
+        },
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@carenest.com\",\n  \"phone\": \"+233200000000\",\n  \"password\": \"AdminPass123!\",\n  \"firstName\": \"System\",\n  \"lastName\": \"Admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register-admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register-admin"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agency",
+      "item": [
+        {
+          "name": "Get All Agencies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/agencies",
+              "host": ["{{baseUrl}}"],
+              "path": ["agencies"]
+            }
+          }
+        },
+        {
+          "name": "Get Agency by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/agencies/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["agencies", "{{agencyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Agency Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agencies/{{agencyId}}/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["agencies", "{{agencyId}}", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Agency Revenue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agencies/{{agencyId}}/dashboard/revenue?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["agencies", "{{agencyId}}", "dashboard", "revenue"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Family",
+      "item": [
+        {
+          "name": "Get Family Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Family Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"householdNotes\": \"We have a 2-year-old and a dog.\",\n  \"emergencyContactName\": \"Kwame Mensah\",\n  \"emergencyContactPhone\": \"+233244000001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/family/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get Family Addresses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family/me/addresses",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me", "addresses"]
+            }
+          }
+        },
+        {
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"line1\": \"12 Airport Hills\",\n  \"city\": \"Accra\",\n  \"region\": \"Greater Accra\",\n  \"latitude\": 5.6037,\n  \"longitude\": -0.1870,\n  \"isDefault\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/family/me/addresses",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me", "addresses"]
+            }
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family/me/addresses/{{addressId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me", "addresses", "{{addressId}}"]
+            }
+          }
+        },
+        {
+          "name": "Save Agency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family/me/saved-agencies/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me", "saved-agencies", "{{agencyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Saved Agencies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family/me/saved-agencies",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me", "saved-agencies"]
+            }
+          }
+        },
+        {
+          "name": "Remove Saved Agency",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/family/me/saved-agencies/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["family", "me", "saved-agencies", "{{agencyId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Worker",
+      "item": [
+        {
+          "name": "Create Worker",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Efua\",\n  \"lastName\": \"Ampofo\",\n  \"photoUrl\": \"https://example.com/efua-photo.jpg\",\n  \"bio\": \"Experienced nanny with 5 years of experience.\",\n  \"yearsExperience\": 5,\n  \"hourlyRate\": 25.0,\n  \"isAvailable\": true,\n  \"preferredLocation\": \"Accra\",\n  \"services\": [\"Nanny\", \"Caregiver\"],\n  \"availableDays\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workers/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get Worker Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workers/profile/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "profile", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Workers by Agency",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workers/agency/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "agency", "{{agencyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Available Workers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workers/agency/{{agencyId}}/available?service=Nanny",
+              "host": ["{{baseUrl}}"],
+              "path": ["workers", "agency", "{{agencyId}}", "available"],
+              "query": [
+                {
+                  "key": "service",
+                  "value": "Nanny"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "documentType",
+                  "value": "NATIONAL_ID",
+                  "type": "text"
+                },
+                {
+                  "key": "workerId",
+                  "value": "{{workerId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "My national ID card",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Worker Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/worker/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "worker", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Agency Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/agency/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "agency", "{{agencyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agencyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "{{documentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Submit Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agencyId\": \"{{agencyId}}\",\n  \"rating\": 5,\n  \"comment\": \"Excellent service! Very professional.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"]
+            }
+          }
+        },
+        {
+          "name": "Get Family Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{familyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/family/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "family", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Agency Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/agency/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "agency", "{{agencyId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{status}}\",\n  \"reason\": \"{{reason}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Platform Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get All Agencies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agencies",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "agencies"]
+            }
+          }
+        },
+        {
+          "name": "Get Agency by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agencies/{{agencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "agencies", "{{agencyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Verify Agency",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verificationStatus\": \"VERIFIED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/agencies/{{agencyId}}/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "agencies", "{{agencyId}}", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Suspend Agency",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Violation of terms\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/agencies/{{agencyId}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "agencies", "{{agencyId}}", "suspend"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/documents/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "documents", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Verify Document",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/documents/{{documentId}}/verify?status=VERIFIED",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "documents", "{{documentId}}", "verify"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "VERIFIED"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "email",
+      "value": "ama@example.com"
+    },
+    {
+      "key": "password",
+      "value": "TestPass123!"
+    },
+    {
+      "key": "familyToken",
+      "value": ""
+    },
+    {
+      "key": "agencyToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "agencyId",
+      "value": ""
+    },
+    {
+      "key": "workerId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "addressId",
+      "value": ""
+    },
+    {
+      "key": "status",
+      "value": "ACTIVE"
+    },
+    {
+      "key": "reason",
+      "value": ""
+    }
+  ]
+}
