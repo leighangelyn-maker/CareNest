@@ -21,6 +21,8 @@ import com.example.carenest.family.FamilyProfile;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -29,7 +31,7 @@ import jakarta.persistence.Table;
 
 //Defining the Booking entity and mapping it to the "bookings" table in the database.
 @Entity
-@Table
+@Table(name = "bookings")
 @Data
 @Builder
 @NoArgsConstructor
@@ -56,6 +58,7 @@ public class Booking {
     @JoinColumn(name = "address_id", nullable = false)
     private FamilyAddress familyAddress;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private BookingStatus status;
 

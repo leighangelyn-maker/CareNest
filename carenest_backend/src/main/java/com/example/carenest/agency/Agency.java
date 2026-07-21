@@ -26,7 +26,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 
 @Entity
-@Table(name = "agency")
+@Table(name = "agencies")
 @Data
 @Builder
 @NoArgsConstructor
