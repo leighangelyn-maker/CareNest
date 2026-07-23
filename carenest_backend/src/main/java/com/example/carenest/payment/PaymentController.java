@@ -52,6 +52,11 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success(response, "Payment retrieved successfully"));
     }
 
+    @GetMapping("/callback-placeholder")
+    public ResponseEntity<String> callbackPlaceholder(@RequestParam(required = false) String reference) {
+        return ResponseEntity.ok("Payment processed. Reference: " + reference + ". You may close this window.");
+    }
+
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentByBooking(@PathVariable UUID bookingId) {
         PaymentResponse response = paymentService.getPaymentByBookingId(bookingId);
