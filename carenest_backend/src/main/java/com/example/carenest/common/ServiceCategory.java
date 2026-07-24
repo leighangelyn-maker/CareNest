@@ -18,7 +18,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "service_categories")
+// FIX: was "service_categories" (plural) - the real table created by
+// V1__init_schema.sql is "service_category" (singular). This mismatch
+// would have failed Hibernate's ddl-auto=validate as soon as anything
+// actually queried this entity (which nothing did, until the Worker
+// feature added a repository for it).
+@Table(name = "service_category")
 public class ServiceCategory {
 
     @Id
