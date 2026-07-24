@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "service_category")
+@Table(name = "service_categories")
 public class ServiceCategory {
 
     @Id

@@ -11,8 +11,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.example.carenest.booking.dto.AssignWorkerRequest;
 import com.example.carenest.booking.dto.BookingResponse;
 import com.example.carenest.booking.dto.CreateBookingRequest;
+import com.example.carenest.booking.dto.UpdateBookingPriceRequest;
 import com.example.carenest.booking.dto.UpdateBookingStatusRequest;
 import com.example.carenest.common.dto.response.ApiResponse;
 import com.example.carenest.security.SecurityUtils;
@@ -70,5 +72,30 @@ public class BookingController {
         UUID cancelledBy = securityUtils.getCurrentUserId();
         BookingResponse response = bookingService.cancelBooking(id, cancelledBy.toString(), reason);
         return ResponseEntity.ok(ApiResponse.success(response, "Booking cancelled successfully"));
+    }
+
+    /**
+     * Agency-side: assign one of its workers to a booking. Inherits the
+     * worker's default rate unless the price has already been manually
+     * overridden for this booking.
+     */
+    @PatchMapping("/{id}/assign-worker")
+    public ResponseEntity<ApiResponse<BookingResponse>> assignWorker(
+            @PathVariable UUID id,
+            @Valid @RequestBody AssignWorkerRequest request) {
+        BookingResponse response = bookingService.assignWorker(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Worker assigned successfully"));
+    }
+
+    /**
+     * Agency-side: manually override the hourly rate for this specific
+     * booking (e.g. special terms negotiated with the family).
+     */
+    @PatchMapping("/{id}/price")
+    public ResponseEntity<ApiResponse<BookingResponse>> updatePrice(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateBookingPriceRequest request) {
+        BookingResponse response = bookingService.updatePrice(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Booking price updated successfully"));
     }
 }

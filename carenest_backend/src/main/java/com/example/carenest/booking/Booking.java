@@ -18,6 +18,7 @@ import com.example.carenest.agency.Agency;
 import com.example.carenest.common.ServiceCategory;
 import com.example.carenest.family.FamilyAddress;
 import com.example.carenest.family.FamilyProfile;
+import com.example.carenest.worker.Worker;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,6 +51,12 @@ public class Booking {
     @JoinColumn(name = "agency_id", nullable = false)
     private Agency agency;
 
+    // Nullable: no worker is assigned until the agency reviews the booking
+    // and picks one of its staff (PENDING_ASSIGNMENT -> ASSIGNED transition).
+    @ManyToOne
+    @JoinColumn(name = "worker_id")
+    private Worker worker;
+
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private ServiceCategory serviceCategory;
@@ -76,6 +83,14 @@ public class Booking {
 
     @Column(name = "hourly_rate_minor_units")
     private Integer hourlyRateMinorUnits;
+
+    // True once the agency has manually adjusted the price for this specific
+    // booking (via PATCH /bookings/{id}/price). When true, assigning or
+    // reassigning a worker will NOT overwrite the rate with the worker's
+    // default - the manual override wins.
+    @Column(name = "price_overridden")
+    @Builder.Default
+    private Boolean priceOverridden = false;
 
     @Column(name = "total_hours", nullable = false)
     private BigDecimal totalHours;

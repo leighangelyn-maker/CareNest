@@ -25,11 +25,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
      * Conflict detection: finds any existing, non-cancelled bookings for the
      * same family whose time window overlaps the requested window.
      * Overlap condition: existing.start < newEnd AND existing.end > newStart
-     *
-     * NOTE: this checks conflicts at the FAMILY level (a family shouldn't be
-     * able to double-book itself). Once a Worker-level assignment entity
-     * exists, add an equivalent overlap check scoped to the assigned worker
-     * so two families can't book the same worker for overlapping times.
      */
     @Query("""
         SELECT b FROM Booking b
@@ -40,6 +35,28 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         """)
     List<Booking> findOverlappingBookingsForFamily(
             @Param("familyId") UUID familyId,
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime
+    );
+
+    /**
+     * Same overlap logic as above, but scoped to a specific worker - used
+     * when an agency assigns a worker to a booking, so the same worker can't
+     * end up double-booked across two different families' requests.
+     * Excludes the booking currently being assigned (excludeBookingId) so a
+     * booking doesn't "conflict with itself" when re-checked.
+     */
+    @Query("""
+        SELECT b FROM Booking b
+        WHERE b.worker.id = :workerId
+        AND b.id <> :excludeBookingId
+        AND b.status <> com.example.carenest.booking.BookingStatus.CANCELLED
+        AND b.startTime < :endTime
+        AND b.endTime > :startTime
+        """)
+    List<Booking> findOverlappingBookingsForWorker(
+            @Param("workerId") UUID workerId,
+            @Param("excludeBookingId") UUID excludeBookingId,
             @Param("startTime") OffsetDateTime startTime,
             @Param("endTime") OffsetDateTime endTime
     );

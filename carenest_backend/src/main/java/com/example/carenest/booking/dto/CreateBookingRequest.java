@@ -39,9 +39,12 @@ public class CreateBookingRequest {
 
     private String recurrenceRule;
 
-    // TODO: once Agency/ServiceCategory pricing (rate cards) exist, source this
-    // server-side instead of trusting the client-supplied rate.
-    @NotNull(message = "Hourly rate is required")
+    // Optional at creation time - no worker is assigned yet, so there's
+    // usually no rate to know. If provided, it's used as a starting price
+    // (and marks the booking as price-overridden, since it's a manual
+    // family/agency-supplied number rather than inherited from a worker).
+    // Once a worker is assigned via PATCH /bookings/{id}/assign-worker,
+    // their defaultHourlyRateMinorUnits fills this in if it's still null.
     @Positive(message = "Hourly rate must be positive")
     private Integer hourlyRateMinorUnits;
 

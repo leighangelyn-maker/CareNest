@@ -22,6 +22,8 @@ public class BookingResponse {
     private UUID id;
     private UUID familyId;
     private UUID agencyId;
+    private UUID workerId;
+    private String workerName;
     private UUID serviceCategoryId;
     private UUID familyAddressId;
     private BookingStatus status;
@@ -30,6 +32,7 @@ public class BookingResponse {
     private Boolean isRecurring;
     private String recurrenceRule;
     private Integer hourlyRateMinorUnits;
+    private Boolean priceOverridden;
     private BigDecimal totalHours;
     private Integer subtotalMinorUnits;
     private BigDecimal platformFeePct;
@@ -47,6 +50,8 @@ public class BookingResponse {
                 .id(booking.getId())
                 .familyId(booking.getFamily().getId())
                 .agencyId(booking.getAgency().getId())
+                .workerId(booking.getWorker() != null ? booking.getWorker().getId() : null)
+                .workerName(booking.getWorker() != null ? booking.getWorker().getFullName() : null)
                 .serviceCategoryId(booking.getServiceCategory().getId())
                 .familyAddressId(booking.getFamilyAddress().getId())
                 .status(booking.getStatus())
@@ -55,6 +60,7 @@ public class BookingResponse {
                 .isRecurring(booking.getIsRecurring())
                 .recurrenceRule(booking.getRecurrenceRule())
                 .hourlyRateMinorUnits(booking.getHourlyRateMinorUnits())
+                .priceOverridden(booking.getPriceOverridden())
                 .totalHours(booking.getTotalHours())
                 .subtotalMinorUnits(booking.getSubtotalMinorUnits())
                 .platformFeePct(booking.getPlatformFeePct())

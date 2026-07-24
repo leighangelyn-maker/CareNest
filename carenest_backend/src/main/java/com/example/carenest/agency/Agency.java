@@ -62,6 +62,14 @@ public class Agency {
     @Column(name = "website")
     private String website;
 
+    // Used for Worker Search location filtering (e.g. "workers in Kumasi").
+    // Kept as simple text rather than lat/lng - no geo-distance search for now.
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "region")
+    private String region;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private AgencyStatus status;
