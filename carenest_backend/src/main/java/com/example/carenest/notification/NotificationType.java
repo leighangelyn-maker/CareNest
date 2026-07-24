@@ -1,0 +1,11 @@
+package com.example.carenest.notification;
+
+public enum NotificationType {
+    NEW_BOOKING_REQUEST,
+    WORKER_ASSIGNED,
+    BOOKING_CONFIRMED,
+    BOOKING_CANCELLED,
+    BOOKING_COMPLETED,
+    PAYMENT_RECEIVED,
+    PAYMENT_FAILED
+}

@@ -28,6 +28,8 @@ import com.example.carenest.family.FamilyAddress;
 import com.example.carenest.family.FamilyProfile;
 import com.example.carenest.family.repository.FamilyAddressRepository;
 import com.example.carenest.family.repository.FamilyProfileRepository;
+import com.example.carenest.notification.NotificationService;
+import com.example.carenest.notification.NotificationType;
 import com.example.carenest.worker.Worker;
 import com.example.carenest.worker.repository.WorkerRepository;
 
@@ -44,6 +46,7 @@ public class BookingServiceImpl implements BookingService {
     private final ServiceCategoryRepository serviceCategoryRepository;
     private final FamilyAddressRepository familyAddressRepository;
     private final WorkerRepository workerRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -103,6 +106,16 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} created with status {}", saved.getId(), saved.getStatus());
+
+        // ASSUMPTION: Agency.getUser() exists (confirmed) - notify the
+        // agency that a family has requested a booking.
+        notificationService.create(
+                agency.getUser(),
+                NotificationType.NEW_BOOKING_REQUEST,
+                "New booking request",
+                "A family has requested a booking for " + serviceCategory.getName() + ".",
+                saved.getId());
+
         return BookingResponse.fromEntity(saved);
     }
 
@@ -142,6 +155,9 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} status updated to {}", bookingId, saved.getStatus());
+
+        notifyStatusChange(saved);
+
         return BookingResponse.fromEntity(saved);
     }
 
@@ -160,6 +176,9 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Booking {} cancelled by {}", bookingId, cancelledBy);
+
+        notifyStatusChange(saved);
+
         return BookingResponse.fromEntity(saved);
     }
 
@@ -202,6 +221,15 @@ public class BookingServiceImpl implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
         log.info("Worker {} assigned to booking {}", worker.getId(), bookingId);
+
+        // ASSUMPTION: FamilyProfile.getUser() exists, mirroring Agency.getUser().
+        notificationService.create(
+                saved.getFamily().getUser(),
+                NotificationType.WORKER_ASSIGNED,
+                "Worker assigned",
+                worker.getFullName() + " has been assigned to your booking.",
+                saved.getId());
+
         return BookingResponse.fromEntity(saved);
     }
 
@@ -224,6 +252,46 @@ public class BookingServiceImpl implements BookingService {
         log.info("Booking {} price manually overridden to {} minor units/hr",
                 bookingId, request.getHourlyRateMinorUnits());
         return BookingResponse.fromEntity(saved);
+    }
+
+    /**
+     * Fires the right notification(s) for whatever the booking's status now
+     * is. Called after both updateBookingStatus() and cancelBooking(), so
+     * cancellation is only notified once regardless of which path set it.
+     */
+    private void notifyStatusChange(Booking booking) {
+        switch (booking.getStatus()) {
+            case CONFIRMED -> notificationService.create(
+                    booking.getFamily().getUser(),
+                    NotificationType.BOOKING_CONFIRMED,
+                    "Booking confirmed",
+                    "Your booking has been confirmed.",
+                    booking.getId());
+            case CANCELLED -> {
+                notificationService.create(
+                        booking.getFamily().getUser(),
+                        NotificationType.BOOKING_CANCELLED,
+                        "Booking cancelled",
+                        "Your booking has been cancelled.",
+                        booking.getId());
+                notificationService.create(
+                        booking.getAgency().getUser(),
+                        NotificationType.BOOKING_CANCELLED,
+                        "Booking cancelled",
+                        "A booking has been cancelled.",
+                        booking.getId());
+            }
+            case COMPLETED -> notificationService.create(
+                    booking.getFamily().getUser(),
+                    NotificationType.BOOKING_COMPLETED,
+                    "Booking completed",
+                    "Your booking has been marked as completed.",
+                    booking.getId());
+            default -> {
+                // No notification for PENDING_ASSIGNMENT, ASSIGNED, IN_PROGRESS,
+                // DISPUTED yet - add cases here if the team wants them later.
+            }
+        }
     }
 
     private Booking findBookingOrThrow(UUID bookingId) {

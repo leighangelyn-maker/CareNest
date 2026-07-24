@@ -26,6 +26,8 @@ import com.example.carenest.booking.BookingStatus;
 import com.example.carenest.booking.repository.BookingRepository;
 import com.example.carenest.common.exception.BadRequestException;
 import com.example.carenest.common.exception.ResourceNotFoundException;
+import com.example.carenest.notification.NotificationService;
+import com.example.carenest.notification.NotificationType;
 import com.example.carenest.payment.dto.InitiatePaymentRequest;
 import com.example.carenest.payment.dto.PaymentResponse;
 import com.example.carenest.payment.dto.PaystackWebhookPayload;
@@ -49,6 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     @Value("${paystack.secret-key}")
     private String paystackSecretKey;
@@ -121,6 +124,8 @@ public class PaymentServiceImpl implements PaymentService {
         boolean isSuccess = "charge.success".equalsIgnoreCase(payload.getEvent())
                 && "success".equalsIgnoreCase(payload.getData().getStatus());
 
+        Booking booking = payment.getBooking();
+
         if (isSuccess) {
             payment.setStatus(PaymentStatus.PAID);
             payment.setPaidAt(java.time.Instant.now());
@@ -128,9 +133,29 @@ public class PaymentServiceImpl implements PaymentService {
                 payment.setPaystackTransactionId(String.valueOf(payload.getData().getTransactionId()));
             }
             log.info("Payment {} marked PAID via webhook", payment.getId());
+
+            notificationService.create(
+                    booking.getFamily().getUser(),
+                    NotificationType.PAYMENT_RECEIVED,
+                    "Payment received",
+                    "Your payment for this booking was received successfully.",
+                    booking.getId());
+            notificationService.create(
+                    booking.getAgency().getUser(),
+                    NotificationType.PAYMENT_RECEIVED,
+                    "Payment received",
+                    "Payment has been received for a booking.",
+                    booking.getId());
         } else {
             payment.setStatus(PaymentStatus.FAILED);
             log.info("Payment {} marked FAILED via webhook (event={})", payment.getId(), payload.getEvent());
+
+            notificationService.create(
+                    booking.getFamily().getUser(),
+                    NotificationType.PAYMENT_FAILED,
+                    "Payment failed",
+                    "Your payment for this booking could not be processed. Please try again.",
+                    booking.getId());
         }
 
         paymentRepository.save(payment);
