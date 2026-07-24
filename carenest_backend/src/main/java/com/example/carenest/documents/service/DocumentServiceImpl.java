@@ -8,6 +8,8 @@ import com.example.carenest.documents.model.VerificationDocument;
 import com.example.carenest.documents.repository.VerificationDocumentRepository;
 import com.example.carenest.agency.Agency;
 import com.example.carenest.agency.repository.AgencyRepository;
+import com.example.carenest.notification.NotificationService;
+import com.example.carenest.notification.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final VerificationDocumentRepository documentRepository;
     private final AgencyRepository agencyRepository;
+    private final NotificationService notificationService;
 
     @Value("${storage.upload-dir:uploads}")
     private String uploadDir;
@@ -149,6 +152,18 @@ public class DocumentServiceImpl implements DocumentService {
 
         document = documentRepository.save(document);
         log.info("Document verified successfully: {}", documentId);
+
+        // Notify the agency of the verification outcome.
+        notificationService.create(
+                document.getAgency().getUser(),
+                document.getStatus() == DocumentStatus.VERIFIED
+                        ? NotificationType.DOCUMENT_VERIFIED
+                        : NotificationType.DOCUMENT_REJECTED,
+                document.getStatus() == DocumentStatus.VERIFIED ? "Document verified" : "Document rejected",
+                document.getStatus() == DocumentStatus.VERIFIED
+                        ? document.getDocumentName() + " has been verified."
+                        : document.getDocumentName() + " was rejected: " + document.getRejectionReason(),
+                null);
 
         return mapToResponse(document);
     }
