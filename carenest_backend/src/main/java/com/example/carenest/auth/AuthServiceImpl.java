@@ -90,6 +90,7 @@ public class AuthServiceImpl implements AuthService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .status(user.getStatus())
+                        .agencyId(user.getAgencyId() != null ? user.getAgencyId().toString() : null)
                         .build())
                 .build();
     }
@@ -186,6 +187,7 @@ public class AuthServiceImpl implements AuthService {
                             .email(user.getEmail())
                             .role(user.getRole())
                             .status(user.getStatus())
+                            .agencyId(user.getAgencyId() != null ? user.getAgencyId().toString() : null)
                             .build())
                     .build();
 
@@ -240,6 +242,7 @@ public class AuthServiceImpl implements AuthService {
                             .email(user.getEmail())
                             .role(user.getRole())
                             .status(user.getStatus())
+                            .agencyId(user.getAgencyId() != null ? user.getAgencyId().toString() : null)
                             .build())
                     .build();
 
@@ -340,6 +343,7 @@ public class AuthServiceImpl implements AuthService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .status(user.getStatus())
+                        .agencyId(user.getAgencyId() != null ? user.getAgencyId().toString() : null)
                         .build())
                 .build();
     }
