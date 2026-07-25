@@ -1,4 +1,4 @@
-package com.example.carenest.common.dto;
+package com.example.carenest.common.dto.response;
 
 import java.util.UUID;
 
