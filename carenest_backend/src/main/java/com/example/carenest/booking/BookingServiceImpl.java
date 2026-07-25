@@ -57,8 +57,8 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("End time must be after start time");
         }
 
-        FamilyProfile family = familyProfileRepository.findById(familyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Family not found: " + familyId));
+        FamilyProfile family = familyProfileRepository.findByUserId(familyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Family profile not found for user: " + familyId));
 
         Agency agency = agencyRepository.findById(request.getAgencyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Agency not found: " + request.getAgencyId()));

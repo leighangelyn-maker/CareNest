@@ -34,10 +34,28 @@ public class FamilyService {
 
     @Transactional
     public FamilyProfileResponse updateProfile(FamilyProfileUpdateRequest request) {
-        // NOTE: still a stub, unrelated to the address/saved-agency fix -
-        // flagging that this (and mapToResponse below) likely need the same
-        // treatment addAddress() just got, since they return null/empty too.
-        return null; // placeholder
+        FamilyProfile profile = getCurrentProfile();
+
+        // Partial update - only overwrite fields the client actually sent,
+        // so a request with just one field doesn't null out the rest.
+        if (request.getFirstName() != null) {
+            profile.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            profile.setLastName(request.getLastName());
+        }
+        if (request.getHouseholdNotes() != null) {
+            profile.setHouseholdNotes(request.getHouseholdNotes());
+        }
+        if (request.getEmergencyContactName() != null) {
+            profile.setEmergencyContactName(request.getEmergencyContactName());
+        }
+        if (request.getEmergencyContactPhone() != null) {
+            profile.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        }
+
+        FamilyProfile saved = familyProfileRepository.save(profile);
+        return mapToResponse(saved);
     }
 
     public List<FamilyAddressResponse> getAddresses() {
@@ -130,7 +148,14 @@ public class FamilyService {
     }
 
     private FamilyProfileResponse mapToResponse(FamilyProfile profile) {
-        // mapping logic
-        return new FamilyProfileResponse();
+        FamilyProfileResponse response = new FamilyProfileResponse();
+        response.setId(profile.getId());
+        response.setFirstName(profile.getFirstName());
+        response.setLastName(profile.getLastName());
+        response.setAvatarUrl(profile.getAvatarUrl());
+        response.setHouseholdNotes(profile.getHouseholdNotes());
+        response.setEmergencyContactName(profile.getEmergencyContactName());
+        response.setEmergencyContactPhone(profile.getEmergencyContactPhone());
+        return response;
     }
 }

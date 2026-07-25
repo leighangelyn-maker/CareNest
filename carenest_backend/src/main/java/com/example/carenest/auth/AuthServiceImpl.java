@@ -11,6 +11,8 @@ import com.example.carenest.auth.model.UserStatus;
 import com.example.carenest.auth.model.VerificationToken;
 import com.example.carenest.config.JwtUtils;
 import com.example.carenest.email.EmailService;
+import com.example.carenest.family.FamilyProfile;
+import com.example.carenest.family.repository.FamilyProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final VerificationTokenRepository verificationTokenRepository;
     private final EmailService emailService;
+    private final FamilyProfileRepository familyProfileRepository;
 
     @Override
     @Transactional
@@ -65,6 +68,18 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
         log.info("User registered successfully: {}", user.getEmail());
+
+        // Every family-role user needs a FamilyProfile row - bookings,
+        // addresses, saved agencies, and reviews all hang off this, not off
+        // the User directly. Emergency contact info isn't collected at
+        // signup, so it's left null here and filled in later via profile
+        // update (family_profiles.emergency_contact_* is now nullable).
+        FamilyProfile familyProfile = new FamilyProfile();
+        familyProfile.setUser(user);
+        familyProfile.setFirstName(user.getFirstName());
+        familyProfile.setLastName(user.getLastName());
+        familyProfileRepository.save(familyProfile);
+        log.info("Family profile created for user: {}", user.getEmail());
 
         createAndSendVerificationToken(user);
 

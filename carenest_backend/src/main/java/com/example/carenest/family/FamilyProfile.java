@@ -46,10 +46,13 @@ public class FamilyProfile {
     @Column(name = "household_notes")
     private String householdNotes;
 
-    @Column(name = "emergency_contact_name", nullable = false)
+    // FIX: no longer NOT NULL - RegisterRequest doesn't collect these at
+    // signup time, so a FamilyProfile can now be auto-created at
+    // registration without them. Filled in later via profile update.
+    @Column(name = "emergency_contact_name")
     private String emergencyContactName;
 
-    @Column(name = "emergency_contact_phone", nullable = false)
+    @Column(name = "emergency_contact_phone")
     private String emergencyContactPhone;
 
     @CreationTimestamp
