@@ -1,141 +1,156 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, FlatList
+  View, Text, StyleSheet, SafeAreaView, TextInput,
+  TouchableOpacity, FlatList, Image, ActivityIndicator
 } from 'react-native';
+import { getAgencies } from '../services/api';
 
-type Agency = {
-  id: string;
-  name: string;
-  rating: number;
-  reviews: number;
-  services: string[];
-  location: string;
-  phone: string;
-  verified: boolean;
-};
-
-const dummyAgencies: Agency[] = [
-  {
-    id: '1',
-    name: 'Angelyn Home Services',
-    rating: 4.8,
-    reviews: 120,
-    services: ['Nanny', 'Cleaner', 'Cook'],
-    location: 'kumasi, '
-    ,
-    phone: '+233 539504082',
-    verified: true,
-  },
+const CATEGORIES = ['All', 'Nanny', 'Cleaning', 'Cooking'];
+const RATING_FILTERS = [
+  { label: 'Any rating', value: undefined as number | undefined },
+  { label: '4.0+', value: 4 },
+  { label: '4.5+', value: 4.5 },
 ];
 
-export default function AgencySearchScreen({ navigation, route }: any) {
-  const { service } = route.params;
-  const [search, setSearch] = useState('');
+export default function AgencySearchScreen({ route, navigation }: any) {
+  const [city, setCity] = useState('');
+  const [category, setCategory] = useState<string>(route.params?.category ?? 'All');
+  const [minRating, setMinRating] = useState<number | undefined>(undefined);
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = dummyAgencies.filter(a =>
-    a.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const renderStars = (rating: number) => {
-    const full = Math.floor(rating);
-    return '★'.repeat(full) + '☆'.repeat(5 - full);
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAgencies({
+        category: category === 'All' ? undefined : category,
+        city: city.trim() || undefined,
+        minRating,
+      });
+      setResults(response.data ?? response ?? []);
+    } catch (err: any) {
+      setError(err.message || 'Search failed. Pull down to retry.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    runSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, minRating]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Agencies for {service}</Text>
-        <Text style={styles.subtitle}>{filtered.length} agency available</Text>
-      </View>
-
-      <View style={styles.searchBox}>
+      <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search agencies..."
-          placeholderTextColor="#888"
-          value={search}
-          onChangeText={setSearch}
+          value={city}
+          onChangeText={setCity}
+          placeholder="Search by city…"
+          placeholderTextColor="#999"
+          returnKeyType="search"
+          onSubmitEditing={runSearch}
         />
+        <TouchableOpacity style={styles.searchButton} onPress={runSearch}>
+          <Text style={styles.searchButtonText}>Go</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        horizontal
+        data={CATEGORIES}
+        keyExtractor={(item) => item}
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipRow}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card}
-            onPress={() => navigation.navigate('AgencyProfile', {
-              agency: item,
-              service,
-            })}>
-            <View style={styles.cardTop}>
-              <View style={styles.avatarBox}>
-                <Text style={styles.avatarText}>{item.name[0]}</Text>
-              </View>
-              <View style={styles.cardInfo}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.agencyName}>{item.name}</Text>
-                  {item.verified && (
-                    <Text style={styles.verified}>✓ Verified</Text>
-                  )}
-                </View>
-                <Text style={styles.stars}>
-                  {renderStars(item.rating)}
-                  <Text style={styles.ratingNum}> {item.rating} ({item.reviews} reviews)</Text>
-                </Text>
-                <Text style={styles.location}>📍 {item.location}</Text>
-              </View>
-            </View>
-
-            <View style={styles.servicesRow}>
-              {item.services.map((s) => (
-                <View key={s} style={styles.serviceTag}>
-                  <Text style={styles.serviceTagText}>{s}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.cardBottom}>
-              <Text style={styles.contactHint}>Tap to view profile & contact</Text>
-              <Text style={styles.arrow}>→</Text>
-            </View>
+          <TouchableOpacity
+            style={[styles.chip, category === item && styles.chipActive]}
+            onPress={() => setCategory(item)}>
+            <Text style={[styles.chipText, category === item && styles.chipTextActive]}>
+              {item}
+            </Text>
           </TouchableOpacity>
         )}
       />
+
+      <FlatList
+        horizontal
+        data={RATING_FILTERS}
+        keyExtractor={(item) => item.label}
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipRow}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.chip, minRating === item.value && styles.chipActive]}
+            onPress={() => setMinRating(item.value)}>
+            <Text style={[styles.chipText, minRating === item.value && styles.chipTextActive]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {loading ? (
+        <ActivityIndicator style={styles.loader} color="#C62828" />
+      ) : error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : results.length === 0 ? (
+        <Text style={styles.empty}>No agencies match those filters.</Text>
+      ) : (
+        <FlatList
+          data={results}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate('AgencyProfile', { agencyId: item.id })}>
+              {item.logoUrl ? (
+                <Image source={{ uri: item.logoUrl }} style={styles.logo} />
+              ) : (
+                <View style={[styles.logo, styles.logoPlaceholder]}>
+                  <Text style={styles.logoInitial}>{item.name?.charAt(0)}</Text>
+                </View>
+              )}
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardName}>{item.name}</Text>
+                <Text style={styles.cardMeta}>{item.city}</Text>
+                <Text style={styles.cardRating}>
+                  {item.averageRating?.toFixed(1)} ({item.totalReviews} reviews)
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: '#0A1F44' },
-  backBtn:        { padding: 16 },
-  backText:       { color: '#00BCD4', fontSize: 16 },
-  header:         { paddingHorizontal: 24, marginBottom: 16 },
-  title:          { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  subtitle:       { color: '#888', fontSize: 14, marginTop: 4 },
-  searchBox:      { paddingHorizontal: 24, marginBottom: 16 },
-  searchInput:    { backgroundColor: '#1C2E4A', color: '#fff', borderRadius: 10, padding: 14, fontSize: 16 },
-  list:           { paddingHorizontal: 24, paddingBottom: 48 },
-  card:           { backgroundColor: '#1C2E4A', borderRadius: 14, padding: 16, marginBottom: 16 },
-  cardTop:        { flexDirection: 'row', marginBottom: 12 },
-  avatarBox:      { width: 50, height: 50, borderRadius: 25, backgroundColor: '#00BCD4', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  avatarText:     { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  cardInfo:       { flex: 1 },
-  nameRow:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  agencyName:     { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  verified:       { color: '#00BCD4', fontSize: 11, backgroundColor: '#0A1F44', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  stars:          { color: '#FFD700', fontSize: 14, marginBottom: 4 },
-  ratingNum:      { color: '#888', fontSize: 12 },
-  location:       { color: '#888', fontSize: 13 },
-  servicesRow:    { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  serviceTag:     { backgroundColor: '#0A1F44', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
-  serviceTagText: { color: '#00BCD4', fontSize: 12 },
-  cardBottom:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  contactHint:    { color: '#888', fontSize: 13 },
-  arrow:          { color: '#00BCD4', fontSize: 18 },
+  container:        { flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingTop: 20 },
+  searchBar:        { flexDirection: 'row', gap: 8 },
+  searchInput:      { flex: 1, backgroundColor: '#F5F5F5', borderWidth: 1, borderColor: '#E0E0E0', color: '#1A1A1A', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  searchButton:     { backgroundColor: '#0D1B2A', borderRadius: 10, paddingHorizontal: 18, justifyContent: 'center' },
+  searchButtonText: { color: '#fff', fontWeight: 'bold' },
+  chipRow:          { marginTop: 14, flexGrow: 0 },
+  chip:             { borderWidth: 1, borderColor: '#0D1B2A', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8 },
+  chipActive:       { backgroundColor: '#0D1B2A' },
+  chipText:         { fontSize: 13, color: '#0D1B2A' },
+  chipTextActive:   { color: '#fff', fontWeight: '600' },
+  loader:           { marginTop: 30 },
+  error:            { color: '#0D1B2A', marginTop: 20, fontSize: 13 },
+  empty:            { color: '#999', marginTop: 30, textAlign: 'center' },
+  listContent:      { paddingTop: 16, paddingBottom: 40 },
+  card:             { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  logo:             { width: 52, height: 52, borderRadius: 26, marginRight: 12 },
+  logoPlaceholder:  { backgroundColor: '#0D1B2A', justifyContent: 'center', alignItems: 'center' },
+  logoInitial:      { color: '#fff', fontWeight: 'bold', fontSize: 20 },
+  cardInfo:         { flex: 1 },
+  cardName:         { fontSize: 15, fontWeight: '600', color: '#1A1A1A' },
+  cardMeta:         { fontSize: 13, color: '#666666', marginTop: 2 },
+  cardRating:       { fontSize: 13, color: '#666666', marginTop: 2 },
 });

@@ -3,17 +3,21 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import AddWorkerScreen from '../screens/AddWorkerScreen';
+import EmailVerificationScreen from '../screens/EmailVerificationScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import BookingScreen from '../screens/BookingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PaymentScreen from '../screens/PaymentScreen';
+import NotificationScreen from '../screens/NotificstionScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import AgencyHomeScreen from '../screens/AgencyHomeScreen';
+import AgencyBookingsScreen from '../screens/AgencyBookingScreen';
+import AgencyBookingDetailScreen from '../screens/AgencyBookingDetailScreen';
 import AgencySearchScreen from '../screens/AgencySearchScreen';
 import AgencyProfileScreen from '../screens/AgencyProfileScreen';
-import ChatScreen from '../screens/ChatScreen';
 import BookingHistoryScreen from '../screens/BookingHistoryScreen';
 import RatingScreen from '../screens/RatingScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -22,6 +26,7 @@ const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const BookingStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const AgencyStack = createNativeStackNavigator();
 const RootStack = createNativeStackNavigator();
 
 function HomeStackScreen() {
@@ -30,8 +35,8 @@ function HomeStackScreen() {
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
       <HomeStack.Screen name="AgencySearch" component={AgencySearchScreen} />
       <HomeStack.Screen name="AgencyProfile" component={AgencyProfileScreen} />
-      <HomeStack.Screen name="Chat" component={ChatScreen} />
       <HomeStack.Screen name="Payment" component={PaymentScreen} />
+      <HomeStack.Screen name="Notifications" component={NotificationScreen} />
     </HomeStack.Navigator>
   );
 }
@@ -42,7 +47,6 @@ function BookingStackScreen() {
       <BookingStack.Screen name="BookingMain" component={BookingScreen} />
       <BookingStack.Screen name="AgencySearch" component={AgencySearchScreen} />
       <BookingStack.Screen name="AgencyProfile" component={AgencyProfileScreen} />
-      <BookingStack.Screen name="Chat" component={ChatScreen} />
       <BookingStack.Screen name="Payment" component={PaymentScreen} />
     </BookingStack.Navigator>
   );
@@ -59,6 +63,18 @@ function ProfileStackScreen() {
   );
 }
 
+function AgencyStackScreen() {
+  return (
+    <AgencyStack.Navigator screenOptions={{ headerShown: false }}>
+      <AgencyStack.Screen name="AgencyHomeMain" component={AgencyHomeScreen} />
+      <AgencyStack.Screen name="AddWorker" component={AddWorkerScreen} />
+      <AgencyStack.Screen name="AgencyBookings" component={AgencyBookingsScreen} />
+      <AgencyStack.Screen name="AgencyBookingDetail" component={AgencyBookingDetailScreen} />
+      <AgencyStack.Screen name="Notifications" component={NotificationScreen} />
+    </AgencyStack.Navigator>
+  );
+}
+
 function ClientTabs() {
   return (
     <Tab.Navigator
@@ -69,11 +85,11 @@ function ClientTabs() {
         tabBarInactiveTintColor: '#888',
       }}>
       <Tab.Screen name="Home" component={HomeStackScreen}
-        options={{ tabBarLabel: '🏠 Home' }} />
+        options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Booking" component={BookingStackScreen}
-        options={{ tabBarLabel: '📋 Book' }} />
+        options={{ tabBarLabel: 'Book' }} />
       <Tab.Screen name="Profile" component={ProfileStackScreen}
-        options={{ tabBarLabel: '👤 Profile' }} />
+        options={{ tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );
 }
@@ -83,12 +99,14 @@ export default function AppNavigator() {
     <NavigationContainer>
       <RootStack.Navigator initialRouteName="Onboarding"
         screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
         <RootStack.Screen name="Login" component={LoginScreen} />
         <RootStack.Screen name="Register" component={RegisterScreen} />
         <RootStack.Screen name="Main" component={ClientTabs} />
-        <RootStack.Screen name="AgencyHome" component={AgencyHomeScreen} />
+        <RootStack.Screen name="AgencyHome" component={AgencyStackScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );
 }
+
