@@ -13,6 +13,8 @@ import com.example.carenest.auth.UserRepository;
 import com.example.carenest.documents.model.DocumentStatus;
 import com.example.carenest.documents.model.VerificationDocument;
 import com.example.carenest.documents.repository.VerificationDocumentRepository;
+import com.example.carenest.notification.NotificationService;
+import com.example.carenest.notification.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,7 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final AgencyRepository agencyRepository;
     private final VerificationDocumentRepository documentRepository;
+    private final NotificationService notificationService;
 
     // ==================== USER MANAGEMENT ====================
 
@@ -158,6 +161,20 @@ public class AdminServiceImpl implements AdminService {
 
         document = documentRepository.save(document);
         log.info("Document verified: {}", documentId);
+
+        // Notify the agency of the verification outcome. Mirrors the same
+        // hook added to DocumentServiceImpl.verifyDocument() - both paths
+        // can mark a document verified/rejected, so both need to notify.
+        notificationService.create(
+                document.getAgency().getUser(),
+                documentStatus == DocumentStatus.VERIFIED
+                        ? NotificationType.DOCUMENT_VERIFIED
+                        : NotificationType.DOCUMENT_REJECTED,
+                documentStatus == DocumentStatus.VERIFIED ? "Document verified" : "Document rejected",
+                documentStatus == DocumentStatus.VERIFIED
+                        ? document.getDocumentName() + " has been verified."
+                        : document.getDocumentName() + " was rejected: " + document.getRejectionReason(),
+                null);
 
         return document;
     }

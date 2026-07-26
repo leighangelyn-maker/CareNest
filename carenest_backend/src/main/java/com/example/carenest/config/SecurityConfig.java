@@ -61,6 +61,7 @@ public class SecurityConfig {
                     "/auth/refresh",
                     "/auth/logout",
                     "/auth/verify-email",
+                    "/auth/resend-verification",
                     "/auth/forgot-password",
                     "/auth/reset-password",
                     // H2 Console - PUBLIC (dev only)
@@ -72,7 +73,11 @@ public class SecurityConfig {
                     "/api-docs/**",
                     // Test - PUBLIC
                     "/public-test",
-                    "/error" 
+                    "/error",
+                    // Paystack webhook - PUBLIC (Paystack's servers call this directly;
+                    // no JWT available. Security is enforced via HMAC-SHA512 signature
+                    // verification inside PaymentServiceImpl.handleWebhook(), not here.
+                    "/payments/webhook"
                 ).permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()

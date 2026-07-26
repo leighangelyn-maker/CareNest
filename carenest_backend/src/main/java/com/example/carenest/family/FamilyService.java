@@ -1,15 +1,20 @@
 package com.example.carenest.family;
 
-import com.example.carenest.family.dto.*;
-import com.example.carenest.family.repository.FamilyProfileRepository;
-import com.example.carenest.family.repository.FamilyAddressRepository;
-import com.example.carenest.security.SecurityUtils;
-import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+
+import com.example.carenest.common.exception.BadRequestException;
+import com.example.carenest.common.exception.ResourceNotFoundException;
+import com.example.carenest.family.dto.*;
+import com.example.carenest.family.repository.FamilyAddressRepository;
+import com.example.carenest.family.repository.FamilyProfileRepository;
+import com.example.carenest.security.SecurityUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +22,8 @@ public class FamilyService {
 
     private final FamilyProfileRepository familyProfileRepository;
     private final FamilyAddressRepository familyAddressRepository;
-    private final SecurityUtils securityUtils; // Assume you have this from BE1
+    private final SavedAgencyService savedAgencyService;
+    private final SecurityUtils securityUtils;
 
     public FamilyProfileResponse getCurrentFamilyProfile() {
         UUID userId = securityUtils.getCurrentUserId();
@@ -28,48 +34,128 @@ public class FamilyService {
 
     @Transactional
     public FamilyProfileResponse updateProfile(FamilyProfileUpdateRequest request) {
-        // implementation...
-        return null; // placeholder
+        FamilyProfile profile = getCurrentProfile();
+
+        // Partial update - only overwrite fields the client actually sent,
+        // so a request with just one field doesn't null out the rest.
+        if (request.getFirstName() != null) {
+            profile.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            profile.setLastName(request.getLastName());
+        }
+        if (request.getHouseholdNotes() != null) {
+            profile.setHouseholdNotes(request.getHouseholdNotes());
+        }
+        if (request.getEmergencyContactName() != null) {
+            profile.setEmergencyContactName(request.getEmergencyContactName());
+        }
+        if (request.getEmergencyContactPhone() != null) {
+            profile.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        }
+
+        FamilyProfile saved = familyProfileRepository.save(profile);
+        return mapToResponse(saved);
     }
 
     public List<FamilyAddressResponse> getAddresses() {
-        // implementation...
-        return List.of();
+        FamilyProfile profile = getCurrentProfile();
+        return familyAddressRepository.findByFamilyProfileId(profile.getId()).stream()
+                .map(this::mapAddressToResponse)
+                .toList();
     }
 
+    @Transactional
     public FamilyAddressResponse addAddress(FamilyAddressRequest request) {
-        // implementation...
-        return null;
+        FamilyProfile profile = getCurrentProfile();
+
+        // Only one address can be default at a time - unset any existing
+        // default before setting this one, if this one is marked default.
+        if (request.isDefault()) {
+            List<FamilyAddress> existing = familyAddressRepository.findByFamilyProfileId(profile.getId());
+            existing.stream()
+                    .filter(a -> Boolean.TRUE.equals(a.getIsDefault()))
+                    .forEach(a -> {
+                        a.setIsDefault(false);
+                        familyAddressRepository.save(a);
+                    });
+        }
+
+        FamilyAddress address = FamilyAddress.builder()
+                .familyProfile(profile)
+                .label(request.getLabel())
+                .line1(request.getLine1())
+                .line2(request.getLine2())
+                .city(request.getCity())
+                .region(request.getRegion())
+                .latitude(request.getLatitude() != null ? request.getLatitude().doubleValue() : null)
+                .longitude(request.getLongitude() != null ? request.getLongitude().doubleValue() : null)
+                .isDefault(request.isDefault())
+                .build();
+
+        FamilyAddress saved = familyAddressRepository.save(address);
+        return mapAddressToResponse(saved);
     }
 
+    @Transactional
     public void deleteAddress(UUID addressId) {
-        // implementation...
-    }
+        FamilyProfile profile = getCurrentProfile();
 
-    private FamilyProfileResponse mapToResponse(FamilyProfile profile) {
-        // mapping logic
-        return new FamilyProfileResponse();
-    }
+        FamilyAddress address = familyAddressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + addressId));
 
-    // Add these methods to FamilyService
+        if (!address.getFamilyProfile().getId().equals(profile.getId())) {
+            throw new BadRequestException("You can only delete your own addresses");
+        }
+
+        familyAddressRepository.delete(address);
+    }
 
     @Transactional
     public void saveAgency(UUID agencyId) {
-        UUID userId = securityUtils.getCurrentUserId();
-        FamilyProfile profile = familyProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
-
-        // Check if already saved
-        // Implementation using SavedAgency entity and repository
+        FamilyProfile profile = getCurrentProfile();
+        savedAgencyService.saveAgency(profile.getId(), agencyId);
     }
 
     @Transactional
     public void removeSavedAgency(UUID agencyId) {
-        // implementation
+        FamilyProfile profile = getCurrentProfile();
+        savedAgencyService.unsaveAgency(profile.getId(), agencyId);
     }
 
     public List<SavedAgencyResponse> getSavedAgencies() {
-        // implementation
-        return List.of();
+        FamilyProfile profile = getCurrentProfile();
+        return savedAgencyService.getSavedAgencies(profile.getId());
+    }
+
+    private FamilyProfile getCurrentProfile() {
+        UUID userId = securityUtils.getCurrentUserId();
+        return familyProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+    }
+
+    private FamilyAddressResponse mapAddressToResponse(FamilyAddress address) {
+        FamilyAddressResponse response = new FamilyAddressResponse();
+        response.setId(address.getId());
+        response.setLabel(address.getLabel());
+        response.setLine1(address.getLine1());
+        response.setCity(address.getCity());
+        response.setRegion(address.getRegion());
+        response.setLatitude(address.getLatitude() != null ? BigDecimal.valueOf(address.getLatitude()) : null);
+        response.setLongitude(address.getLongitude() != null ? BigDecimal.valueOf(address.getLongitude()) : null);
+        response.setDefault(Boolean.TRUE.equals(address.getIsDefault()));
+        return response;
+    }
+
+    private FamilyProfileResponse mapToResponse(FamilyProfile profile) {
+        FamilyProfileResponse response = new FamilyProfileResponse();
+        response.setId(profile.getId());
+        response.setFirstName(profile.getFirstName());
+        response.setLastName(profile.getLastName());
+        response.setAvatarUrl(profile.getAvatarUrl());
+        response.setHouseholdNotes(profile.getHouseholdNotes());
+        response.setEmergencyContactName(profile.getEmergencyContactName());
+        response.setEmergencyContactPhone(profile.getEmergencyContactPhone());
+        return response;
     }
 }

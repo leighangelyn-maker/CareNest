@@ -7,9 +7,9 @@ import com.example.carenest.agency.repository.AgencyPayoutRepository;
 import com.example.carenest.booking.Booking;
 import com.example.carenest.booking.BookingStatus;
 import com.example.carenest.booking.repository.BookingRepository;
-import com.example.carenest.agency.repository.AgencyPayoutRepository;
 import com.example.carenest.agency.AgencyPayout;
 import com.example.carenest.agency.PayoutStatus;
+import com.example.carenest.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,14 +32,14 @@ public class AgencyDashboardService {
     public AgencyDashboardResponse getDashboardStats(UUID agencyId) {
         // Validate agency exists
         agencyRepository.findById(agencyId)
-                .orElseThrow(() -> new RuntimeException("Agency not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Agency not found: " + agencyId));
 
         // Get booking stats
         List<Booking> allBookings = bookingRepository.findByAgencyId(agencyId);
         Integer totalBookings = allBookings.size();
         Integer activeBookings = (int) allBookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.ASSIGNED || 
-                            b.getStatus() == BookingStatus.CONFIRMED || 
+                .filter(b -> b.getStatus() == BookingStatus.ASSIGNED ||
+                            b.getStatus() == BookingStatus.CONFIRMED ||
                             b.getStatus() == BookingStatus.IN_PROGRESS)
                 .count();
         Integer completedBookings = (int) allBookings.stream()
@@ -55,10 +55,13 @@ public class AgencyDashboardService {
                 .filter(p -> p.getStatus() == PayoutStatus.PENDING)
                 .count();
 
-        // Calculate total revenue
+        // Calculate total revenue.
+        // NOTE: subtotalMinorUnits isn't marked non-nullable on the Booking
+        // entity, so guard against nulls here rather than letting
+        // mapToInt(Booking::getSubtotalMinorUnits) NPE on unboxing.
         Integer totalRevenue = allBookings.stream()
                 .filter(b -> b.getStatus() == BookingStatus.COMPLETED)
-                .mapToInt(Booking::getSubtotalMinorUnits)
+                .mapToInt(this::safeSubtotal)
                 .sum();
 
         return AgencyDashboardResponse.builder()
@@ -75,7 +78,7 @@ public class AgencyDashboardService {
     public AgencyRevenueResponse getAgencyRevenue(UUID agencyId, OffsetDateTime startDate, OffsetDateTime endDate) {
         // Validate agency exists
         agencyRepository.findById(agencyId)
-                .orElseThrow(() -> new RuntimeException("Agency not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Agency not found: " + agencyId));
 
         // Get bookings in date range
         List<Booking> bookings = bookingRepository.findByAgencyId(agencyId).stream()
@@ -85,10 +88,10 @@ public class AgencyDashboardService {
 
         Integer bookingCount = bookings.size();
         Integer totalRevenue = bookings.stream()
-                .mapToInt(Booking::getSubtotalMinorUnits)
+                .mapToInt(this::safeSubtotal)
                 .sum();
         Integer platformFees = bookings.stream()
-                .mapToInt(Booking::getPlatformFeeMinorUnits)
+                .mapToInt(this::safePlatformFee)
                 .sum();
         Integer agencyPayouts = totalRevenue - platformFees;
 
@@ -102,6 +105,16 @@ public class AgencyDashboardService {
                 .bookingCount(bookingCount)
                 .breakdown(List.of()) // TODO: Implement monthly breakdown
                 .build();
+    }
+
+    private int safeSubtotal(Booking booking) {
+        Integer value = booking.getSubtotalMinorUnits();
+        return value != null ? value : 0;
+    }
+
+    private int safePlatformFee(Booking booking) {
+        Integer value = booking.getPlatformFeeMinorUnits();
+        return value != null ? value : 0;
     }
 
     private String formatCurrency(Integer minorUnits) {

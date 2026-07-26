@@ -48,6 +48,9 @@ public class User {
 
     private UUID agencyId;
 
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
     private LocalDateTime lastLoginAt;
     private Integer failedLoginAttempts;
     private LocalDateTime lockedUntil;

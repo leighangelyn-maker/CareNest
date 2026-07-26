@@ -14,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -37,18 +38,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtUtils.validateToken(token)) {
                     String email = jwtUtils.getEmailFromToken(token);
                     String role = jwtUtils.getRoleFromToken(token);
+                    // FIX: principal must be the user's UUID, not their email -
+                    // SecurityUtils.getCurrentUserId() expects to cast the
+                    // principal directly to UUID. Every authenticated endpoint
+                    // in the app was failing with "User not authenticated"
+                    // because this was previously set to the email String.
+                    UUID userId = UUID.fromString(jwtUtils.getUserIdFromToken(token));
 
                     SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
 
                     UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(
-                            email, 
+                            userId, 
                             null, 
                             Collections.singletonList(authority)
                         );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.info("🔐 User authenticated: {} with role: {}", email, role);
+                    log.info("🔐 User authenticated: {} ({}) with role: {}", email, userId, role);
                 } else {
                     log.warn("⚠️ Invalid token provided");
                 }

@@ -1,24 +1,25 @@
 package com.example.carenest.review.repository;
 
-import com.example.carenest.review.Review;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.example.carenest.review.Review;
+
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
-    
-    List<Review> findByAgencyId(UUID agencyId);
-    
-    Optional<Review> findByBookingId(UUID bookingId);
-    
-    List<Review> findByFamilyId(UUID familyId);
-    
+
+    Optional<Review> findByBooking_Id(UUID bookingId);
+
+    List<Review> findByAgency_IdOrderByCreatedAtDesc(UUID agencyId);
+
+    List<Review> findByFamily_IdOrderByCreatedAtDesc(UUID familyId);
+
+    long countByAgency_Id(UUID agencyId);
+
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.agency.id = :agencyId")
-    Double averageRatingByAgencyId(@Param("agencyId") UUID agencyId);
+    Double findAverageRatingForAgency(@Param("agencyId") UUID agencyId);
 }
