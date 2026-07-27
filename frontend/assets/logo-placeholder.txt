@@ -1,0 +1,5 @@
+Place carenest-logo.png in this folder.
+The logo image shared in chat needs to be saved manually as:
+  frontend/assets/carenest-logo.png
+
+Then the app will use it automatically.

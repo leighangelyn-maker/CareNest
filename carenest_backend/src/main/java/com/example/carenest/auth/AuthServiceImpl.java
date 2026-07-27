@@ -39,6 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationTokenRepository verificationTokenRepository;
     private final EmailService emailService;
 
+    @org.springframework.beans.factory.annotation.Value("${sendgrid.api-key:dev-key-not-set}")
+    private String sendgridApiKey;
+
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -65,6 +68,14 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
         log.info("User registered successfully: {}", user.getEmail());
+
+        // In dev (SendGrid not configured), auto-activate so login works without email verification
+        if (sendgridApiKey == null || sendgridApiKey.startsWith("dev-") || sendgridApiKey.contains("xxxxxxx")) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setEmailVerifiedAt(java.time.LocalDateTime.now());
+            user = userRepository.save(user);
+            log.warn("DEV MODE: Auto-activated user {} (no email service configured)", user.getEmail());
+        }
 
         createAndSendVerificationToken(user);
 
@@ -317,6 +328,12 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
         log.info("Admin registered successfully: {}", user.getEmail());
+
+        if (sendgridApiKey == null || sendgridApiKey.startsWith("dev-") || sendgridApiKey.contains("xxxxxxx")) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setEmailVerifiedAt(java.time.LocalDateTime.now());
+            user = userRepository.save(user);
+        }
 
         String accessToken = jwtUtils.generateAccessToken(
                 user.getEmail(),
