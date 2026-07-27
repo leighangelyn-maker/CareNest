@@ -14,7 +14,7 @@
     },
     "plugins": ["expo-font"],
     "extra": {
-      "apiBaseUrl": "http://172.20.10.6:8080"
+      "apiBaseUrl": "https://carenest-2k59.onrender.com"
     }
   }
 }
