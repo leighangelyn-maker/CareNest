@@ -4,15 +4,32 @@
     "slug": "carenest",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
+    "scheme": "carenest",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.carenest.app"
     },
     "android": {
-      "package": "com.carenest.app"
+      "package": "com.carenest.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "carenest",
+              "host": "verify-email"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
-    "plugins": ["expo-font"],
+    "plugins": [
+      "expo-font",
+      "@react-native-community/datetimepicker"
+    ],
     "extra": {
       "apiBaseUrl": "http://172.20.10.6:8080"
     }

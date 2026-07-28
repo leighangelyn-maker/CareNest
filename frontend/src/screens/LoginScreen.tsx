@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  ScrollView, View, Text, TextInput,
-  TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Animated,
+} from 'react-native';import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../AuthContext';
 import apiClient from '../api/client';
-import { Eyebrow, Field, ScreenTitle, Sub, inputStyle } from '../components/atoms';
+import {
+  Eyebrow, Field, ScreenTitle, Sub, inputStyle, Btn,
+} from '../components/atoms';
 import CareNestLogo from '../components/CareNestLogo';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
@@ -17,24 +30,55 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const isSmallScreen = SCREEN_HEIGHT < 700;
 
+// ─── Eye icon ─────────────────────────────────────────────────────────────────
+function EyeIcon({ visible }: { visible: boolean }) {
+  return visible ? (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={Colors.slate} strokeWidth="1.8">
+      <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round" />
+      <Circle cx="12" cy="12" r="3" />
+    </Svg>
+  ) : (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={Colors.slate} strokeWidth="1.8">
+      <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" strokeLinecap="round" />
+      <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" strokeLinecap="round" />
+      <Path d="M14.12 14.12a3 3 0 01-4.24-4.24" strokeLinecap="round" />
+      <Path d="M1 1l22 22" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export default function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
-  // Forgot password state
-  const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotMsg, setForgotMsg] = useState<string | null>(null);
+  // Shake animation for error
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  function triggerShake() {
+    shakeAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+    ]).start();
+  }
 
   async function handleLogin() {
-    if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
+    Keyboard.dismiss();
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
+      triggerShake();
+      return;
+    }
     setLoading(true);
     setError(null);
     setUnverifiedEmail(null);
@@ -43,16 +87,46 @@ export default function LoginScreen({ navigation }: Props) {
       navigation.replace('MainTabs');
     } catch (e: any) {
       const status = e?.response?.status;
-      // Backend error: { data: null, message: "..." }
-      const msg = e?.response?.data?.message ?? e?.response?.data?.error ?? e?.message ?? '';
-      if (status === 409 || msg.toLowerCase().includes('not verified') || msg.toLowerCase().includes('verify')) {
+      const raw: string =
+        e?.response?.data?.message ??
+        e?.response?.data?.data?.error ??
+        e?.response?.data?.error ??
+        e?.message ?? '';
+      const lower = raw.toLowerCase();
+
+      if (
+        status === 409 ||
+        lower.includes('not verified') ||
+        lower.includes('verify your email') ||
+        lower.includes('pending_verification') ||
+        lower.includes('pending verification')
+      ) {
         setUnverifiedEmail(email.trim().toLowerCase());
-        setError('Your email is not verified. Check your inbox or resend the link.');
-      } else if (status === 401 || status === 400 || msg.toLowerCase().includes('invalid')) {
-        setError('Incorrect email or password.');
+        setError(
+          'Your email address has not been verified yet.\n\nPlease check your inbox for the verification link, then try logging in again.',
+        );
+      } else if (
+        status === 401 ||
+        status === 400 ||
+        lower.includes('invalid email or password') ||
+        lower.includes('invalid credentials') ||
+        lower.includes('incorrect') ||
+        lower.includes('wrong') ||
+        lower.includes('not found') ||
+        lower.includes('no user')
+      ) {
+        setError(
+          'Incorrect email address or password. Please check your details and try again.',
+        );
       } else {
-        setError(msg || 'Login failed. Please try again.');
+        // Show the raw backend message when it's specific enough, otherwise generic
+        setError(
+          raw.length > 0 && raw.length < 200
+            ? raw
+            : 'Login failed. Please try again.',
+        );
       }
+      triggerShake();
     } finally {
       setLoading(false);
     }
@@ -63,133 +137,216 @@ export default function LoginScreen({ navigation }: Props) {
     setResending(true);
     setResendMsg(null);
     try {
-      await apiClient.post('/auth/resend-verification', null, { params: { email: unverifiedEmail } });
+      await apiClient.post('/auth/resend-verification', null, {
+        params: { email: unverifiedEmail },
+      });
       setResendMsg('Verification email resent. Check your inbox.');
     } catch (e: any) {
-      setResendMsg(e?.response?.data?.error ?? 'Failed to resend.');
+      setResendMsg(e?.response?.data?.error ?? 'Failed to resend. Please try again.');
     } finally {
       setResending(false);
     }
   }
 
-  async function handleForgotPassword() {
-    if (!forgotEmail.trim()) { setForgotMsg('Enter your email address.'); return; }
-    setForgotLoading(true);
-    setForgotMsg(null);
-    try {
-      await apiClient.post('/auth/forgot-password', { email: forgotEmail.trim().toLowerCase() });
-      setForgotMsg('If that email is registered, a reset link has been sent.');
-    } catch {
-      setForgotMsg('Something went wrong. Please try again.');
-    } finally {
-      setForgotLoading(false);
-    }
-  }
-
-  // ── Forgot password screen ───────────────────────────────────────────────
-  if (showForgot) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.paper }}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity onPress={() => { setShowForgot(false); setForgotMsg(null); }} style={styles.backRow}>
-            <Text style={styles.backText}>← Back to login</Text>
-          </TouchableOpacity>
-          <Eyebrow>Password reset</Eyebrow>
-          <ScreenTitle>Reset your password</ScreenTitle>
-          <Sub>Enter your registered email and we'll send you a reset link.</Sub>
-
-          <Field label="Email">
-            <TextInput style={inputStyle} value={forgotEmail} onChangeText={setForgotEmail}
-              keyboardType="email-address" autoCapitalize="none"
-              placeholder="you@email.com" placeholderTextColor={Colors.slateSoft} />
-          </Field>
-
-          {forgotMsg ? (
-            <Text style={[styles.errorText, { color: forgotMsg.includes('sent') ? Colors.success : Colors.danger }]}>
-              {forgotMsg}
-            </Text>
-          ) : null}
-
-          <TouchableOpacity onPress={handleForgotPassword} disabled={forgotLoading}
-            style={[styles.btn, forgotLoading && { opacity: 0.6 }]}>
-            {forgotLoading
-              ? <ActivityIndicator color={Colors.goldLight} />
-              : <Text style={styles.btnText}>Send reset link</Text>}
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // ── Login form ───────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.paper }}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.logoWrap}>
-            <CareNestLogo size={isSmallScreen ? 80 : 100} showText />
-          </View>
-          <Sub>Sign in to your CareNest account.</Sub>
-        </View>
+    <SafeAreaView style={styles.safeArea}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+        >
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Logo */}
+            <View style={styles.header}>
+              <View style={styles.logoWrap}>
+                <CareNestLogo size={isSmallScreen ? 80 : 100} showText />
+              </View>
+              <Sub style={{ textAlign: 'center' }}>Sign in to your CareNest account.</Sub>
+            </View>
 
-        <Field label="Email">
-          <TextInput style={inputStyle} value={email} onChangeText={setEmail}
-            keyboardType="email-address" autoCapitalize="none"
-            placeholder="you@email.com" placeholderTextColor={Colors.slateSoft} />
-        </Field>
-        <Field label="Password">
-          <TextInput style={inputStyle} value={password} onChangeText={setPassword}
-            secureTextEntry placeholder="••••••••" placeholderTextColor={Colors.slateSoft} />
-        </Field>
+            {/* Email */}
+            <Field label="Email">
+              <TextInput
+                style={inputStyle}
+                value={email}
+                onChangeText={(v) => { setEmail(v); setError(null); }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="you@email.com"
+                placeholderTextColor={Colors.slateSoft}
+                returnKeyType="next"
+              />
+            </Field>
 
-        <TouchableOpacity onPress={() => { setShowForgot(true); setForgotEmail(email); }}
-          style={styles.forgotRow}>
-          <Text style={styles.forgotText}>Forgot password?</Text>
-        </TouchableOpacity>
+            {/* Password with eye toggle */}
+            <Field label="Password">
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={[inputStyle, styles.passwordInput]}
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setError(null); }}
+                  secureTextEntry={!showPassword}
+                  placeholder="••••••••"
+                  placeholderTextColor={Colors.slateSoft}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                />
+                <TouchableOpacity
+                  style={styles.eyeBtn}
+                  onPress={() => setShowPassword(v => !v)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  accessibilityRole="button"
+                >
+                  <EyeIcon visible={showPassword} />
+                </TouchableOpacity>
+              </View>
+            </Field>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {/* Error (shake animation) */}
+            {error ? (
+              <Animated.View
+                style={[
+                  styles.errorBox,
+                  { transform: [{ translateX: shakeAnim }] },
+                ]}
+              >
+                <Text style={styles.errorText}>{error}</Text>
+              </Animated.View>
+            ) : null}
 
-        {/* Resend verification if email not verified */}
-        {unverifiedEmail ? (
-          <TouchableOpacity onPress={handleResend} disabled={resending} style={styles.resendBtn}>
-            {resending
-              ? <ActivityIndicator color={Colors.navy} size="small" />
-              : <Text style={styles.resendText}>Resend verification email</Text>}
-          </TouchableOpacity>
-        ) : null}
-        {resendMsg ? (
-          <Text style={[styles.errorText, { color: resendMsg.includes('resent') ? Colors.success : Colors.danger }]}>
-            {resendMsg}
-          </Text>
-        ) : null}
+            {/* Resend verification */}
+            {unverifiedEmail ? (
+              <View style={styles.resendRow}>
+                <Text style={styles.resendHint}>
+                  Check your inbox for the verification link. Once you tap it, come back here to log in.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleResend}
+                  disabled={resending}
+                  style={styles.resendBtn}
+                  activeOpacity={0.7}
+                >
+                  {resending ? (
+                    <ActivityIndicator color={Colors.navy} size="small" />
+                  ) : (
+                    <Text style={styles.resendText}>Resend verification email</Text>
+                  )}
+                </TouchableOpacity>
+                {resendMsg ? (
+                  <Text
+                    style={[
+                      styles.resendMsg,
+                      { color: resendMsg.includes('resent') ? Colors.success : Colors.danger },
+                    ]}
+                  >
+                    {resendMsg}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
 
-        <TouchableOpacity onPress={handleLogin} disabled={loading}
-          style={[styles.btn, loading && { opacity: 0.6 }]}>
-          {loading ? <ActivityIndicator color={Colors.goldLight} /> : <Text style={styles.btnText}>Log in →</Text>}
-        </TouchableOpacity>
+            {/* Login button */}
+            <Btn
+              onPress={handleLogin}
+              style={loading ? { opacity: 0.6 } : undefined}
+            >
+              {loading ? 'Signing in…' : 'Log in →'}
+            </Btn>
 
-        <Text style={styles.hint}>
-          New to Care Nest?{' '}
-          <Text style={styles.link} onPress={() => navigation.navigate('Role')}>Create an account</Text>
-        </Text>
-      </ScrollView>
+            <Text style={styles.hint}>
+              New to CareNest?{' '}
+              <Text style={styles.link} onPress={() => navigation.navigate('Role')}>
+                Create an account
+              </Text>
+            </Text>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: SCREEN_H_PADDING, paddingTop: isSmallScreen ? 16 : 32, paddingBottom: 32 },
-  header: { alignItems: 'center', marginBottom: isSmallScreen ? 12 : 20 },
+  safeArea: { flex: 1, backgroundColor: Colors.paper },
+  flex: { flex: 1 },
+  container: {
+    paddingHorizontal: SCREEN_H_PADDING,
+    paddingTop: isSmallScreen ? 16 : 32,
+    paddingBottom: 40,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: isSmallScreen ? 16 : 28,
+  },
   logoWrap: { marginBottom: isSmallScreen ? 8 : 14 },
-  forgotRow: { alignSelf: 'flex-end', marginBottom: 8 },
-  forgotText: { fontFamily: Fonts.interSemiBold, fontSize: 12, color: Colors.navy },
-  errorText: { color: Colors.danger, fontSize: 13, marginBottom: 12, fontFamily: Fonts.inter, lineHeight: 19 },
-  resendBtn: { alignSelf: 'center', marginBottom: 8, paddingVertical: 6 },
-  resendText: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.navy, textDecorationLine: 'underline' },
-  btn: { width: '100%', backgroundColor: Colors.navy, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  btnText: { fontFamily: Fonts.interSemiBold, fontSize: 15, color: Colors.goldLight },
-  hint: { textAlign: 'center', marginTop: 16, fontSize: 12.5, color: Colors.slate, fontFamily: Fonts.inter },
+
+  // Password field
+  passwordRow: { position: 'relative' },
+  passwordInput: { paddingRight: 46 },
+  eyeBtn: {
+    position: 'absolute',
+    right: 13,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  errorBox: {
+    backgroundColor: Colors.dangerBg,
+    borderWidth: 1,
+    borderColor: Colors.dangerBorder,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  errorText: {
+    fontFamily: Fonts.inter,
+    fontSize: 13,
+    color: Colors.danger,
+    lineHeight: 19,
+  },
+
+  // Resend
+  resendRow: { marginBottom: 12, gap: 6 },
+  resendHint: {
+    fontFamily: Fonts.inter,
+    fontSize: 12.5,
+    color: Colors.slate,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  resendBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  resendText: {
+    fontFamily: Fonts.interSemiBold,
+    fontSize: 13,
+    color: Colors.navy,
+    textDecorationLine: 'underline',
+  },
+  resendMsg: {
+    fontFamily: Fonts.inter,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+
+  hint: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 13,
+    color: Colors.slate,
+    fontFamily: Fonts.inter,
+  },
   link: { color: Colors.navy, fontFamily: Fonts.interBold },
-  backRow: { marginBottom: 24 },
-  backText: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.navy },
 });

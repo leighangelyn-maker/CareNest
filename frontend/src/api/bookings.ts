@@ -1,6 +1,6 @@
 import apiClient from './client';
 import { ApiBooking, BookingCreateRequest, PaymentInitResponse } from '../types';
-import { MOCK_BOOKINGS } from '../data';
+import { MOCK_BOOKINGS, getMockAgencies } from '../data';
 
 /**
  * Fetch all bookings for the authenticated family.
@@ -44,7 +44,7 @@ export async function getBooking(id: string): Promise<ApiBooking> {
 export async function createBooking(req: BookingCreateRequest): Promise<ApiBooking> {
   // Mock agencies can't be booked via real API — create locally
   if (req.agencyId.startsWith('mock-')) {
-    const { MOCK_AGENCIES } = await import('../data');
+    const MOCK_AGENCIES = getMockAgencies();
     const agency = MOCK_AGENCIES.find(a => a.id === req.agencyId) ?? MOCK_AGENCIES[0];
     const mockBooking: ApiBooking = {
       id: `mock-booking-new-${Date.now()}`,

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, BookingStatus } from '../types';
 import { useBookings } from '../BookingContext';
-import { Btn, CheckIcon, Divider, Eyebrow, Row, ScreenTitle, Sub } from '../components/atoms';
+import { Btn, CheckIcon, Divider, ProgressBar, Row, ScreenTitle, Sub } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Confirm'>;
@@ -50,17 +50,17 @@ export default function ConfirmScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ alignItems: 'center', marginBottom: 4 }}>
-        <Eyebrow>Booking confirmed</Eyebrow>
-      </View>
+      <ProgressBar current={3} total={3} />
 
       {/* Ticket */}
       <View style={styles.ticket}>
         <View style={[styles.notch, styles.notchLeft]} />
         <View style={[styles.notch, styles.notchRight]} />
         <View style={styles.seal}><CheckIcon /></View>
-        <ScreenTitle size={18}>You're booked with {booking.agency.name}</ScreenTitle>
-        <Sub>{booking.category}</Sub>
+        <ScreenTitle size={18}>You're booked!</ScreenTitle>
+        <Sub style={{ textAlign: 'center', marginTop: 4 }}>
+          {booking.agency.name} · {booking.category}
+        </Sub>
         <View style={{ marginTop: 14, width: '100%' }}>
           <Divider dashed />
           <Row label="Booking ref" value={shortRef} />
@@ -88,8 +88,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.paper, padding: SCREEN_H_PADDING, paddingTop: 24 },
   ticket: {
     marginVertical: 16, backgroundColor: Colors.paper,
-    borderWidth: 1.5, borderColor: Colors.line, borderRadius: 16,
-    padding: 20, alignItems: 'center', overflow: 'hidden',
+    borderWidth: 1.5, borderColor: Colors.line, borderRadius: 18,
+    padding: 22, alignItems: 'center', overflow: 'hidden',
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   notch: {
     position: 'absolute', width: 20, height: 20,

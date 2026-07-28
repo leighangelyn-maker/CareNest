@@ -15,10 +15,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, MainTabParamList } from '../types';
 import { useAuth } from '../AuthContext';
 import apiClient from '../api/client';
-import { Eyebrow, ScreenTitle, Divider } from '../components/atoms';
-import CareNestLogo from '../components/CareNestLogo';
+import { Eyebrow, ScreenTitle, Divider, Btn } from '../components/atoms';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
-
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Home'>,
   NativeStackScreenProps<RootStackParamList>
@@ -48,7 +47,7 @@ interface AgencyBooking {
 
 const STATUS_COLOR: Record<string, string> = {
   PENDING_ASSIGNMENT: Colors.gold,
-  ASSIGNED: '#3a6ea8',
+  ASSIGNED: Colors.assigned,
   IN_PROGRESS: Colors.navy,
   COMPLETED: Colors.success,
   CANCELLED: Colors.slate,
@@ -117,8 +116,19 @@ function StatCard({ label, value, color }: { label: string; value: string | numb
 
 const statStyles = StyleSheet.create({
   card: {
-    flex: 1, backgroundColor: Colors.navyPale, borderRadius: 12,
-    padding: 12, alignItems: 'center', minWidth: (SCREEN_WIDTH - SCREEN_H_PADDING * 2 - 10) / 2,
+    flex: 1,
+    backgroundColor: Colors.navyPale,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+    minWidth: (SCREEN_WIDTH - SCREEN_H_PADDING * 2 - 10) / 2,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   value: { fontFamily: Fonts.interBold, fontSize: 22, color: Colors.navy, marginBottom: 2 },
   label: { fontFamily: Fonts.inter, fontSize: 11, color: Colors.slate, textAlign: 'center' },
@@ -191,7 +201,11 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <CareNestLogo size={40} />
+          <View style={styles.headerIcon}>
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={Colors.goldLight} strokeWidth="1.8">
+              <Path d="M3 11l9-8 9 8M5 10v10h14V10" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </View>
           <View style={styles.headerText}>
             <Eyebrow>Agency Dashboard</Eyebrow>
             <ScreenTitle size={20}>{name ?? 'My Agency'}</ScreenTitle>
@@ -249,6 +263,12 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
           <>
             {bookings.length === 0 ? (
               <View style={styles.empty}>
+                <View style={styles.emptyIconBox}>
+                  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={Colors.slateSoft} strokeWidth="1.6" strokeLinecap="round">
+                    <Rect x="3" y="5" width="18" height="16" rx="2" />
+                    <Path d="M8 3v4M16 3v4M3 10h18" />
+                  </Svg>
+                </View>
                 <Text style={styles.emptyTitle}>No bookings yet</Text>
                 <Text style={styles.emptyBody}>Bookings from families will appear here once submitted.</Text>
               </View>
@@ -300,6 +320,20 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
           </>
         ) : (
           /* Revenue tab */
+          stats.totalRevenueMinorUnits === 0 ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIconBox}>
+                <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={Colors.slateSoft} strokeWidth="1.6" strokeLinecap="round">
+                  <Circle cx="12" cy="12" r="9" />
+                  <Path d="M12 7v5l3 3" />
+                </Svg>
+              </View>
+              <Text style={styles.emptyTitle}>No revenue yet</Text>
+              <Text style={styles.emptyBody}>
+                Revenue from completed bookings will appear here.
+              </Text>
+            </View>
+          ) : (
           <View style={styles.revenueSection}>
             <View style={styles.revRow}>
               <Text style={styles.revLabel}>Gross revenue</Text>
@@ -325,6 +359,7 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
               <Text style={styles.revValue}>{stats.pendingPayouts}</Text>
             </View>
           </View>
+          )
         )}
       </ScrollView>
     </SafeAreaView>
@@ -333,8 +368,15 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.paper },
-  scroll: { padding: SCREEN_H_PADDING, paddingTop: 14 },
+  scroll: { padding: SCREEN_H_PADDING, paddingTop: 20 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  headerIcon: {
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: Colors.navy,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.goldTintRing,
+    flexShrink: 0,
+  },
   headerText: { flex: 1 },
   statsGrid: { marginBottom: 18 },
   statsRow: { flexDirection: 'row' },
@@ -342,9 +384,9 @@ const styles = StyleSheet.create({
     marginTop: 10, backgroundColor: Colors.navy, borderRadius: 14,
     padding: 16, alignItems: 'center',
   },
-  revenueLabel: { fontFamily: Fonts.inter, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 4 },
+  revenueLabel: { fontFamily: Fonts.inter, fontSize: 12, color: Colors.paperFaint, marginBottom: 4 },
   revenueValue: { fontFamily: Fonts.interBold, fontSize: 26, color: Colors.goldLight, marginBottom: 4 },
-  revenueNote: { fontFamily: Fonts.inter, fontSize: 11, color: 'rgba(255,255,255,0.5)' },
+  revenueNote: { fontFamily: Fonts.inter, fontSize: 11, color: Colors.paperDim },
   tabRow: {
     flexDirection: 'row', marginBottom: 14,
     backgroundColor: Colors.navyPale, borderRadius: 10, padding: 3,
@@ -354,11 +396,23 @@ const styles = StyleSheet.create({
   tabText: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.slateSoft },
   tabTextActive: { color: Colors.goldLight },
   empty: { paddingVertical: 32, alignItems: 'center' },
+  emptyIconBox: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: Colors.navyPale,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 1, borderColor: Colors.line,
+  },
   emptyTitle: { fontFamily: Fonts.interBold, fontSize: 14, color: Colors.navy, marginBottom: 4 },
   emptyBody: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.slate, textAlign: 'center', lineHeight: 20 },
   bookingCard: {
-    borderWidth: 1, borderColor: Colors.line, borderRadius: 14,
+    borderWidth: 1, borderColor: Colors.line, borderRadius: 16,
     padding: 14, marginBottom: 10,
+    backgroundColor: Colors.paper,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 8,
+    elevation: 2,
   },
   bookingTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   bookingCategory: { fontFamily: Fonts.interBold, fontSize: 15, color: Colors.navy },
@@ -377,7 +431,12 @@ const styles = StyleSheet.create({
   },
   actionBtnText: { fontFamily: Fonts.interSemiBold, fontSize: 12, color: Colors.goldLight },
   revenueSection: {
-    borderWidth: 1, borderColor: Colors.line, borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: Colors.line, borderRadius: 16, padding: 16,
+    backgroundColor: Colors.paper,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 8,
+    elevation: 2,
   },
   revRow: {
     flexDirection: 'row', justifyContent: 'space-between',

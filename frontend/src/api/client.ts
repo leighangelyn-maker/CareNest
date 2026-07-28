@@ -36,10 +36,20 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Response interceptor — handle 401
+// Response interceptor — handle 401 and add retry on network errors
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const config = error.config as typeof error.config & { _retryCount?: number };
+    const isNetworkError = !error.response && error.code !== 'ECONNABORTED';
+
+    // Retry once on network errors (not on 4xx/5xx)
+    if (isNetworkError && (!config._retryCount || config._retryCount < 1)) {
+      config._retryCount = (config._retryCount ?? 0) + 1;
+      await new Promise(r => setTimeout(r, 800));
+      return apiClient(config);
+    }
+
     if (error.response?.status === 401) {
       await AsyncStorage.multiRemove(['token', 'user']);
       navigationRef?.navigate('Login');

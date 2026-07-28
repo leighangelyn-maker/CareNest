@@ -11,6 +11,7 @@ import {
   TextInput,
   TextStyle,
   ViewStyle,
+  StyleProp,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
@@ -37,17 +38,19 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
 export function ScreenTitle({
   children,
   size = Typography.screenTitle.fontSize,
+  style,
 }: {
   children: React.ReactNode;
   size?: number;
+  style?: object;
 }) {
   return (
-    <Text style={[styles.screenTitle, { fontSize: size }]}>{children}</Text>
+    <Text style={[styles.screenTitle, { fontSize: size }, style]}>{children}</Text>
   );
 }
 
-export function Sub({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.sub}>{children}</Text>;
+export function Sub({ children, style }: { children: React.ReactNode; style?: object }) {
+  return <Text style={[styles.sub, style]}>{children}</Text>;
 }
 
 // ─── Buttons ─────────────────────────────────────────────────────────────────
@@ -59,13 +62,15 @@ export function Btn({
   onPress,
   variant = 'primary',
   style: extraStyle,
+  textColor,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   variant?: BtnVariant;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  textColor?: string;
 }) {
-  const containerStyle: ViewStyle[] = [styles.btn];
+  const containerStyle: StyleProp<ViewStyle>[] = [styles.btn];
   const textStyle: TextStyle[] = [styles.btnText];
 
   if (variant === 'secondary') {
@@ -77,9 +82,15 @@ export function Btn({
   }
 
   if (extraStyle) containerStyle.push(extraStyle);
+  if (textColor) textStyle.push({ color: textColor });
 
   return (
-    <TouchableOpacity onPress={onPress} style={containerStyle} activeOpacity={0.8}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={containerStyle}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+    >
       <Text style={textStyle}>{children}</Text>
     </TouchableOpacity>
   );
@@ -97,8 +108,11 @@ export function BackBtn({
       onPress={onPress}
       style={[styles.backBtn, dark ? styles.backBtnDark : styles.backBtnLight]}
       activeOpacity={0.7}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityLabel="Go back"
+      accessibilityRole="button"
     >
-      <Text style={{ color: dark ? Colors.paper : Colors.navy, fontSize: 16 }}>←</Text>
+      <Text style={{ color: dark ? Colors.paper : Colors.navy, fontSize: 18, lineHeight: 20 }}>←</Text>
     </TouchableOpacity>
   );
 }
@@ -131,6 +145,28 @@ export const inputStyle: TextStyle = {
   fontSize: 13.5,
   color: Colors.ink,
 };
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+
+export function ProgressBar({ current, total }: { current: number; total: number }) {
+  return (
+    <View style={styles.progressWrapper}>
+      <View style={styles.progressTrack}>
+        {Array.from({ length: total }).map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.progressSegment,
+              i < current ? styles.progressFilled : styles.progressEmpty,
+              i < total - 1 && { marginRight: 4 },
+            ]}
+          />
+        ))}
+      </View>
+      <Text style={styles.progressLabel}>Step {current} of {total}</Text>
+    </View>
+  );
+}
 
 // ─── Verified stamp ───────────────────────────────────────────────────────────
 
@@ -353,18 +389,42 @@ const styles = StyleSheet.create({
     color: Colors.slate,
   },
   backBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    marginTop: 4,
   },
   backBtnDark: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: Colors.navyOverlayLight,
   },
   backBtnLight: {
     backgroundColor: Colors.navyPale,
+  },
+  progressWrapper: {
+    marginBottom: 20,
+  },
+  progressTrack: {
+    flexDirection: 'row',
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 8,
+  },
+  progressSegment: {
+    flex: 1,
+    borderRadius: 3,
+    height: 6,
+  },
+  progressFilled: { backgroundColor: Colors.navy },
+  progressEmpty: { backgroundColor: Colors.navyTint },
+  progressLabel: {
+    fontFamily: Fonts.spaceMonoBold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: Colors.gold,
   },
   field: {
     marginBottom: 14,
@@ -386,7 +446,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: 'rgba(47,107,79,0.25)',
+    borderColor: Colors.successBorder,
     alignSelf: 'flex-start',
   },
   stampText: {
@@ -411,7 +471,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: Colors.line,
-    marginVertical: 6,
+    marginVertical: 4,
   },
   dividerDashed: {
     backgroundColor: 'transparent',
@@ -424,18 +484,23 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 9,
+    paddingVertical: 11,
+    alignItems: 'flex-start',
   },
   rowLabel: {
     color: Colors.slate,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
+    flex: 1,
+    marginRight: 12,
   },
   rowValue: {
     color: Colors.navy,
     fontFamily: Fonts.interSemiBold,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
+    textAlign: 'right',
+    flex: 1,
   },
   sectionLabel: {
     paddingTop: 16,

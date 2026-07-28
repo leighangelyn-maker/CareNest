@@ -62,6 +62,15 @@ export default function MainTabs() {
           alignItems: 'center',
         },
         tabBarAllowFontScaling: false,
+        tabBarBadgeStyle: {
+          backgroundColor: Colors.danger,
+          fontSize: 10,
+          fontFamily: Fonts.interBold,
+          minWidth: 17,
+          height: 17,
+          borderRadius: 9,
+          lineHeight: 17,
+        },
       }}
     >
       <Tab.Screen

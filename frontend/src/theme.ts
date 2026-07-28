@@ -3,18 +3,50 @@
 export const Colors = {
   navy: '#0B1F3A',
   navyLight: '#152C52',
+  navyDark: '#071527',
   navyPale: '#EDF1F7',
+  navyPaleDark: '#D9E2EE',
+  navyOverlay: 'rgba(11,31,58,0.55)',
+  navyOverlayLight: 'rgba(11,31,58,0.45)',
+  navyTint: 'rgba(11,31,58,0.1)',
+  navySubtle: 'rgba(11,31,58,0.05)',
   gold: '#C9A227',
   goldLight: '#E8CD6B',
+  goldPale: 'rgba(201,162,39,0.15)',
+  goldBg: 'rgba(201,162,39,0.14)',
+  goldText: '#8a6c14',
+  goldTint: 'rgba(232,205,107,0.15)',
+  goldTintBorder: 'rgba(232,205,107,0.35)',
+  goldTintSubtle: 'rgba(232,205,107,0.18)',
+  goldTintRing: 'rgba(232,205,107,0.25)',
   cream: '#F6F1E4',
   paper: '#FFFDF8',
+  paperFaint: 'rgba(255,253,248,0.65)',
+  paperMuted: 'rgba(255,253,248,0.55)',
+  paperDim: 'rgba(255,253,248,0.5)',
+  paperSubtle: 'rgba(255,253,248,0.1)',
+  paperDivider: 'rgba(255,253,248,0.12)',
+  white: '#FFFFFF',
   ink: '#1C2431',
   slate: '#5B6B82',
   slateSoft: '#8B97A8',
   line: 'rgba(11,31,58,0.13)',
+  lineSolid: '#D9E2EE',
   success: '#2F6B4F',
   successBg: '#E6F0EA',
+  successBorder: 'rgba(47,107,79,0.3)',
+  successDark: '#246040',
   danger: '#B5462F',
+  dangerBg: 'rgba(181,70,47,0.08)',
+  dangerBorder: 'rgba(181,70,47,0.25)',
+  warning: '#92610a',
+  warningBg: 'rgba(251,191,36,0.12)',
+  warningBorder: 'rgba(251,191,36,0.35)',
+  assigned: '#3a6ea8',
+  assignedBg: 'rgba(58,110,168,0.12)',
+  pastDue: '#FBBF24',
+  cancelled: '#F87171',
+  verifiedGreen: '#7ee8a2',
 } as const;
 
 export const Fonts = {
@@ -31,8 +63,11 @@ export const Fonts = {
 /** Horizontal padding applied uniformly to all screens (dp) */
 export const SCREEN_H_PADDING = 20;
 
-/** Height of the bottom tab bar (dp) — used for scroll-list bottom padding */
-export const TAB_BAR_HEIGHT = 60;
+/** Height of the bottom tab bar base (dp) — actual height includes safe area insets */
+export const TAB_BAR_BASE_HEIGHT = 52;
+
+/** Total tab bar height estimate for scroll padding (dp) */
+export const TAB_BAR_HEIGHT = 62;
 
 // ─── Typography scale ─────────────────────────────────────────────────────────
 // Line-height rules:

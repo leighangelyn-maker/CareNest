@@ -77,6 +77,7 @@ export interface ApiMessage {
   senderName: string;
   content: string;      // message text (was "body" in old schema)
   sentAt: string;       // ISO-8601
+  status?: 'sent' | 'delivered' | 'read';
 }
 
 // ─── Legacy Worker Types (kept for backward compat with unused screens) ────────
@@ -106,16 +107,15 @@ export type RootStackParamList = {
   Welcome: undefined;
   Role: undefined;
   WorkerNote: undefined;
-  WorkerRegister: undefined;
   Register: undefined;
   Login: undefined;
+  EmailVerified: { token: string };
   MainTabs: undefined;
   // Agency-centric screens (new)
   AgencyProfile: { agency: AgencySummary };
   BookAgency: { agency: AgencySummary };
-  // Legacy worker screens (kept to avoid breaking existing registrations)
+  // Legacy worker screen
   Profile: { worker: ApiWorker };
-  Book: { worker: ApiWorker };
   // Booking flow
   Pay: { booking: ApiBooking; agency: AgencySummary };
   Confirm: { booking: ApiBooking };

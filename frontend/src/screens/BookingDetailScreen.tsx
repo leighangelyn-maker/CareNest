@@ -76,7 +76,7 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
 
   if (!booking && !loadError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.centre}>
           <ActivityIndicator size="large" color={Colors.navy} />
         </View>
@@ -86,7 +86,7 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
 
   if (loadError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <BackBtn onPress={() => navigation.goBack()} />
         </View>
@@ -118,12 +118,21 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <BackBtn onPress={() => navigation.goBack()} />
         <Eyebrow>Booking detail</Eyebrow>
         <ScreenTitle>{b.agency.name}</ScreenTitle>
-        <Sub>{b.category}</Sub>
+        <View style={styles.headerMeta}>
+          <Sub>{b.category}</Sub>
+          <View style={[styles.statusPill, { backgroundColor: statusColor(b.status) + '22',
+              borderRadius: 100, borderWidth: 1, borderColor: statusColor(b.status) + '44' }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusColor(b.status) }]} />
+            <Text style={[styles.statusPillText, { color: statusColor(b.status) }]}>
+              {statusLabel(b.status)}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, paddingHorizontal: SCREEN_H_PADDING }}>
@@ -131,6 +140,12 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
         <Divider />
         <Row label="End" value={formatDate(b.endTime)} />
         <Divider />
+        {b.totalHours ? (
+          <>
+            <Row label="Duration" value={`${b.totalHours} hr${b.totalHours !== 1 ? 's' : ''}`} />
+            <Divider />
+          </>
+        ) : null}
         <Row
           label="Status"
           value={statusLabel(b.status)}
@@ -154,15 +169,17 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
         </Btn>
 
         {canReview && (
-          <Btn onPress={() => navigation.navigate('Review', { bookingId: b.id })}
-            style={{ marginTop: 10 }}>
+          <Btn
+            onPress={() => navigation.navigate('Review', { bookingId: b.id })}
+            style={{ marginTop: 10, backgroundColor: Colors.success }}
+            textColor={Colors.paper}>
             Leave a review
           </Btn>
         )}
 
         {canCancel && (
           <Btn variant="ghost" onPress={handleCancel}
-            style={{ marginTop: 10, borderColor: cancelling ? Colors.line : 'rgba(181,70,47,0.3)', opacity: cancelling ? 0.5 : 1 }}>
+          style={{ marginTop: 10, borderColor: cancelling ? Colors.line : Colors.dangerBorder, opacity: cancelling ? 0.5 : 1 }}>
             {cancelling ? 'Cancelling…' : 'Cancel booking'}
           </Btn>
         )}
@@ -173,8 +190,22 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.paper },
-  header: { paddingHorizontal: SCREEN_H_PADDING, paddingTop: 10, paddingBottom: 10 },
-  actions: { paddingHorizontal: SCREEN_H_PADDING, paddingVertical: 14, paddingBottom: 20 },
+  header: { paddingHorizontal: SCREEN_H_PADDING, paddingTop: 8, paddingBottom: 10 },
+  headerMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  statusPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100,
+  },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusPillText: { fontFamily: Fonts.interSemiBold, fontSize: 11.5 },
+  actions: {
+    paddingHorizontal: SCREEN_H_PADDING,
+    paddingVertical: 14,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: Colors.line,
+    backgroundColor: Colors.paper,
+  },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SCREEN_H_PADDING },
   errorText: { fontFamily: Fonts.inter, fontSize: 14, color: Colors.danger, textAlign: 'center' },
   inlineError: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.danger, marginBottom: 8, textAlign: 'center' },

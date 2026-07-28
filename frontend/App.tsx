@@ -14,7 +14,7 @@ import {
   SpaceMono_400Regular,
   SpaceMono_700Bold,
 } from '@expo-google-fonts/space-mono';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 
 import { RootStackParamList } from './src/types';
 import { BookingProvider } from './src/BookingContext';
@@ -38,6 +38,7 @@ import ReviewScreen from './src/screens/ReviewScreen';
 import MessagesScreen from './src/screens/MessagesScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import WorkerProfileSetupScreen from './src/screens/WorkerProfileSetupScreen';
+import EmailVerifiedScreen from './src/screens/EmailVerifiedScreen';
 import MainTabs from './src/navigation/MainTabs';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -49,20 +50,21 @@ function AppNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.paper }}>
-        <ActivityIndicator color={Colors.navy} size="large" />
+      <View style={appStyles.splash}>
+        <Text style={appStyles.splashTitle}>CareNest</Text>
+        <ActivityIndicator color={Colors.navy} size="large" style={{ marginTop: 24 }} />
       </View>
     );
   }
 
-  // Workers go to profile setup if they just logged in for the first time
-  // (determined by checking their profile on the server — handled inside MainTabs/AccountScreen)
   return (
     <Stack.Navigator
       initialRouteName={token ? 'MainTabs' : 'Welcome'}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: Colors.paper },
+        animation: 'slide_from_right',
+        animationDuration: 260,
       }}
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -76,8 +78,6 @@ function AppNavigator() {
       {/* Agency-centric screens */}
       <Stack.Screen name="AgencyProfile" component={AgencyProfileScreen} />
       <Stack.Screen name="BookAgency" component={BookScreen} />
-      {/* Legacy booking screen */}
-      <Stack.Screen name="Book" component={BookScreen} />
       <Stack.Screen name="Pay" component={PayScreen} />
       <Stack.Screen name="Confirm" component={ConfirmScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
@@ -85,6 +85,7 @@ function AppNavigator() {
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="WorkerProfileSetup" component={WorkerProfileSetupScreen} />
+      <Stack.Screen name="EmailVerified" component={EmailVerifiedScreen} />
     </Stack.Navigator>
   );
 }
@@ -101,8 +102,9 @@ export default function App() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.paper }}>
-        <ActivityIndicator color={Colors.navy} />
+      <View style={appStyles.splash}>
+        <Text style={appStyles.splashTitle}>CareNest</Text>
+        <ActivityIndicator color={Colors.navy} size="large" style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -114,6 +116,17 @@ export default function App() {
           <NavigationContainer
             ref={navigationRef}
             onReady={() => setNavigationRef(navigationRef as any)}
+            linking={{
+              prefixes: ['carenest://'],
+              config: {
+                screens: {
+                  EmailVerified: {
+                    path: 'verify-email',
+                    parse: { token: (token: string) => token },
+                  },
+                },
+              },
+            }}
           >
             <StatusBar style="dark" />
             <AppNavigator />
@@ -123,3 +136,18 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const appStyles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.paper,
+  },
+  splashTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 28,
+    color: Colors.navy,
+    letterSpacing: -0.5,
+  },
+});

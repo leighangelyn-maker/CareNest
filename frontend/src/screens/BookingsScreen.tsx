@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -33,18 +34,23 @@ function badgeStyle(status: BookingStatus) {
   switch (status) {
     case 'PENDING_ASSIGNMENT':
     case 'ASSIGNED':
-      return { bg: 'rgba(201,162,39,0.14)', text: '#8a6c14' };
+      return { bg: Colors.goldBg, text: Colors.goldText };
     case 'IN_PROGRESS':
-      return { bg: 'rgba(11,31,58,0.1)', text: Colors.navy };
+      return { bg: Colors.navyTint, text: Colors.navy };
     case 'COMPLETED':
       return { bg: Colors.successBg, text: Colors.success };
     case 'CANCELLED':
-      return { bg: 'rgba(90,90,100,0.12)', text: Colors.slate };
+      return { bg: Colors.navyTint, text: Colors.slate };
   }
 }
 
 function formatDate(iso: string): string {
-  try { return new Date(iso).toLocaleDateString(); } catch { return iso; }
+  try {
+    return new Date(iso).toLocaleString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit',
+    });
+  } catch { return iso; }
 }
 
 export default function BookingsScreen({ navigation }: Props) {
@@ -131,18 +137,26 @@ export default function BookingsScreen({ navigation }: Props) {
               style={styles.item}
               onPress={() => navigation.navigate('BookingDetail', { bookingId: b.id })}
               activeOpacity={0.8}
+              accessibilityLabel={`${b.agency.name} booking, ${STATUS_LABEL[b.status]}`}
+              accessibilityRole="button"
             >
               <View style={styles.itemTop}>
-                <Text style={styles.itemName}>
-                  {b.agency.name} · {b.category}
-                </Text>
-                <View style={[styles.badge, { backgroundColor: bg }]}>
-                  <Text style={[styles.badgeText, { color: text }]}>
-                    {STATUS_LABEL[b.status]}
-                  </Text>
+                <View style={styles.itemLeft}>
+                  <Text style={styles.itemAgency} numberOfLines={1}>{b.agency.name}</Text>
+                  <Text style={styles.itemCategory}>{b.category}</Text>
+                  <Text style={styles.itemMeta}>{formatDate(b.startTime)}</Text>
+                </View>
+                <View style={styles.itemRight}>
+                  <View style={[styles.badge, { backgroundColor: bg }]}>
+                    <Text style={[styles.badgeText, { color: text }]}>
+                      {STATUS_LABEL[b.status]}
+                    </Text>
+                  </View>
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.slateSoft} strokeWidth="2" strokeLinecap="round" style={{ marginTop: 8 }}>
+                    <Path d="M9 18l6-6-6-6" />
+                  </Svg>
                 </View>
               </View>
-              <Text style={styles.itemMeta}>{formatDate(b.startTime)}</Text>
               {b.status === 'COMPLETED' && !b.reviewed && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('Review', { bookingId: b.id })}
@@ -163,21 +177,43 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.paper },
   header: {
     paddingHorizontal: SCREEN_H_PADDING,
-    paddingTop: 22,
+    paddingTop: 18,
     paddingBottom: 10,
     flexShrink: 0,
   },
   centred: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
   errorText: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.danger, textAlign: 'center', marginBottom: 4 },
   list: { paddingHorizontal: SCREEN_H_PADDING, paddingBottom: 14, gap: 10 },
-  item: { borderWidth: 1, borderColor: Colors.line, borderRadius: 14, padding: 13 },
-  itemTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemName: { fontFamily: Fonts.interBold, fontSize: 13, color: Colors.navy, flex: 1, marginRight: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100 },
+  item: {
+    borderWidth: 1, borderColor: Colors.line, borderRadius: 16, padding: 14,
+    backgroundColor: Colors.paper,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 6,
+    elevation: 1,
+  },
+  itemTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  itemLeft: { flex: 1, marginRight: 10 },
+  itemRight: { alignItems: 'flex-end', flexShrink: 0 },
+  itemAgency: { fontFamily: Fonts.interBold, fontSize: 14, color: Colors.navy },
+  itemCategory: { fontFamily: Fonts.interSemiBold, fontSize: 12, color: Colors.slate, marginTop: 2 },
+  badge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'transparent' },
   badgeText: { fontFamily: Fonts.interBold, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: 0.4 },
-  itemMeta: { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slate, marginTop: 5 },
-  reviewBtn: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 9, borderWidth: 1.5, borderColor: Colors.navy, alignSelf: 'flex-start' },
-  reviewBtnText: { fontFamily: Fonts.interBold, fontSize: 12.5, color: Colors.navy },
+  itemMeta: { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slateSoft, marginTop: 5 },
+  reviewBtn: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 9,
+    backgroundColor: Colors.success,
+    alignSelf: 'flex-start',
+    shadowColor: Colors.success,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  reviewBtnText: { fontFamily: Fonts.interBold, fontSize: 12.5, color: Colors.paper },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
   emptyIcon: { width: 56, height: 56, backgroundColor: Colors.navyPale, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   emptyTitle: { fontFamily: Fonts.interBold, fontSize: 13.5, color: Colors.navy, marginBottom: 4, textAlign: 'center' },

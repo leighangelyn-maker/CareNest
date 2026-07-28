@@ -17,6 +17,7 @@ import {
   Btn,
   Divider,
   Eyebrow,
+  ProgressBar,
   Row,
   ScreenTitle,
   Sub,
@@ -70,7 +71,7 @@ export default function PayScreen({ navigation, route }: Props) {
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.paper }}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <BackBtn onPress={() => navigation.goBack()} />
-        <Eyebrow>Step 2 of 3 · Payment</Eyebrow>
+        <ProgressBar current={2} total={3} />
         <ScreenTitle>Secure payment</ScreenTitle>
         <Sub>Funds are held by CareNest and released to the agency once the job is confirmed.</Sub>
 
@@ -146,6 +147,8 @@ export default function PayScreen({ navigation, route }: Props) {
               onPress={handleCopyLink}
               style={[styles.copyBtn, copied && styles.copyBtnDone]}
               activeOpacity={0.8}
+              accessibilityLabel={copied ? 'Payment link copied' : 'Copy payment link'}
+              accessibilityRole="button"
             >
               <Text style={styles.copyBtnText}>
                 {copied ? '✓ Copied!' : 'Copy payment link'}
@@ -179,9 +182,15 @@ const styles = StyleSheet.create({
   summaryCard: {
     borderWidth: 1,
     borderColor: Colors.line,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     marginVertical: 18,
+    backgroundColor: Colors.paper,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   agencyNote: {
     marginTop: 8,
@@ -282,17 +291,17 @@ const styles = StyleSheet.create({
     color: Colors.goldLight,
   },
   note: {
-    backgroundColor: 'rgba(201,162,39,0.08)',
+    backgroundColor: Colors.goldPale,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(201,162,39,0.2)',
+    borderColor: Colors.goldPale,
     marginBottom: 16,
   },
   noteText: {
     fontFamily: Fonts.inter,
     fontSize: 12.5,
-    color: '#8a6c14',
+    color: Colors.goldText,
     lineHeight: 19,
   },
   ctaRow: {

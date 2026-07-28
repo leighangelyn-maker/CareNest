@@ -120,7 +120,24 @@ export default function ProfileScreen({ navigation, route }: Props) {
           <Text style={styles.ctaRateSub}>/ hour</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Btn onPress={() => navigation.navigate('Book', { worker })}>Request booking</Btn>
+          <Btn
+            onPress={() => navigation.navigate('BookAgency', {
+              agency: {
+                id: worker.id ?? 'worker-direct',
+                name: worker.name,
+                city: worker.location ?? 'Ghana',
+                slug: worker.name.toLowerCase().replace(/\s+/g, '-'),
+                averageRating: worker.avgRating ?? 0,
+                totalReviews: worker.totalRatings ?? 0,
+                isAcceptingBookings: true,
+                categories: [worker.serviceType ?? 'General'],
+                description: worker.bio ?? '',
+                logoUrl: null,
+              },
+            })}
+          >
+            Request booking
+          </Btn>
         </View>
       </View>
     </SafeAreaView>
@@ -144,7 +161,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 1,
-    borderColor: 'rgba(232,205,107,0.18)',
+    borderColor: Colors.goldTintSubtle,
   },
   heroId: {
     flexDirection: 'row',
@@ -155,16 +172,15 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 14,
-    backgroundColor: 'rgba(232,205,107,0.15)',
+    backgroundColor: Colors.goldTint,
     borderWidth: 1.5,
-    borderColor: 'rgba(232,205,107,0.4)',
+    borderColor: Colors.goldTintBorder,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   profileInitials: {
     fontFamily: Fonts.interBold,
-    fontWeight: '700',
     fontSize: 24,
     color: Colors.goldLight,
   },
@@ -172,7 +188,6 @@ const styles = StyleSheet.create({
   profileName: {
     fontFamily: Fonts.interBold,
     fontSize: 19,
-    fontWeight: '700',
     color: Colors.paper,
   },
   profileRole: {
@@ -185,11 +200,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 22,
     marginTop: 16,
-    marginBottom: 4,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: Colors.line,
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
+    backgroundColor: Colors.paper,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   stat: {
     flex: 1,
@@ -204,7 +225,6 @@ const styles = StyleSheet.create({
   statNum: {
     fontFamily: Fonts.interBold,
     fontSize: 17,
-    fontWeight: '700',
     color: Colors.navy,
   },
   statLab: {
@@ -226,20 +246,30 @@ const styles = StyleSheet.create({
   },
   skillTag: {
     backgroundColor: Colors.navyPale,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 100,
+    borderWidth: 1.5,
+    borderColor: Colors.line,
   },
   skillText: {
     fontFamily: Fonts.interSemiBold,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
     color: Colors.navy,
   },
   review: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.line,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    backgroundColor: Colors.paper,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   reviewHead: {
     flexDirection: 'row',
@@ -248,7 +278,6 @@ const styles = StyleSheet.create({
   reviewName: {
     fontFamily: Fonts.interBold,
     fontSize: 12,
-    fontWeight: '700',
     color: Colors.navy,
   },
   reviewText: {
@@ -272,7 +301,6 @@ const styles = StyleSheet.create({
   ctaRate: {
     fontFamily: Fonts.interBold,
     fontSize: 17,
-    fontWeight: '700',
     color: Colors.navy,
   },
   ctaRateSub: {

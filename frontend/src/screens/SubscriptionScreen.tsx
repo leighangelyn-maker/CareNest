@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ActivityIndicator,
+  View, Text, ActivityIndicator,
   StyleSheet, ScrollView, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import * as WebBrowser from 'expo-web-browser';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../AuthContext';
 import apiClient from '../api/client';
-import { BackBtn, Eyebrow, ScreenTitle, Sub, Divider, Row } from '../components/atoms';
+import { BackBtn, Btn, Eyebrow, ScreenTitle, Sub, Divider } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Subscription'>;
@@ -104,10 +105,10 @@ export default function SubscriptionScreen({ navigation }: Props) {
 
   function statusColor(s: string) {
     switch (s) {
-      case 'active': return Colors.success;
-      case 'past_due': return Colors.gold;
-      case 'cancelled': return Colors.danger;
-      default: return Colors.slate;
+      case 'active':    return Colors.goldLight;
+      case 'past_due':  return Colors.pastDue;
+      case 'cancelled': return Colors.cancelled;
+      default:          return Colors.paperDim;
     }
   }
 
@@ -129,6 +130,7 @@ export default function SubscriptionScreen({ navigation }: Props) {
             <View style={styles.card}>
               <Text style={styles.planName}>Family Plan</Text>
               <Text style={styles.planPrice}>GHS 100 / month</Text>
+              <View style={styles.cardDivider} />
               <View style={styles.statusRow}>
                 <Text style={styles.statusLabel}>Status</Text>
                 <Text style={[styles.statusValue, { color: statusColor(status?.subscriptionStatus ?? 'inactive') }]}>
@@ -136,51 +138,62 @@ export default function SubscriptionScreen({ navigation }: Props) {
                 </Text>
               </View>
               {status?.subscriptionExpiresAt ? (
-                <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>
-                    {isActive ? 'Renews on' : 'Expired on'}
-                  </Text>
-                  <Text style={styles.statusValue}>
-                    {new Date(status.subscriptionExpiresAt).toLocaleDateString('en-GB', {
-                      day: 'numeric', month: 'long', year: 'numeric'
-                    })}
-                  </Text>
-                </View>
+                <>
+                  <View style={styles.cardDivider} />
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>
+                      {isActive ? 'Renews on' : 'Expired on'}
+                    </Text>
+                    <Text style={styles.statusValue}>
+                      {new Date(status.subscriptionExpiresAt).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'long', year: 'numeric'
+                      })}
+                    </Text>
+                  </View>
+                </>
               ) : null}
             </View>
 
             {/* Past due warning */}
             {isPastDue && (
               <View style={styles.warningBanner}>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#92610a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <Path d="M12 9v4M12 17h.01" />
+                </Svg>
                 <Text style={styles.warningText}>
                   Your last payment failed. Please resubscribe to restore access.
                 </Text>
               </View>
             )}
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
             {/* Actions */}
             {!isActive ? (
-              <TouchableOpacity
+              <Btn
                 onPress={handleSubscribe}
-                disabled={subscribing}
-                style={[styles.btn, subscribing && { opacity: 0.6 }]}
+                style={subscribing ? { opacity: 0.6, marginBottom: 12 } : { marginBottom: 12 }}
               >
-                {subscribing
-                  ? <ActivityIndicator color={Colors.goldLight} />
-                  : <Text style={styles.btnText}>Subscribe — GHS 100/month →</Text>}
-              </TouchableOpacity>
+                {subscribing ? 'Processing…' : 'Subscribe — GHS 100/month →'}
+              </Btn>
             ) : (
-              <TouchableOpacity
+              <Btn
+                variant="ghost"
                 onPress={handleCancel}
-                disabled={cancelling}
-                style={[styles.btnCancel, cancelling && { opacity: 0.6 }]}
+                style={{
+                  marginBottom: 12,
+                  borderColor: Colors.dangerBorder,
+                  opacity: cancelling ? 0.6 : 1,
+                }}
+                textColor={Colors.danger}
               >
-                {cancelling
-                  ? <ActivityIndicator color={Colors.danger} />
-                  : <Text style={styles.btnCancelText}>Cancel subscription</Text>}
-              </TouchableOpacity>
+                {cancelling ? 'Cancelling…' : 'Cancel subscription'}
+              </Btn>
             )}
 
             <Divider />
@@ -200,37 +213,56 @@ const styles = StyleSheet.create({
   scroll: { padding: SCREEN_H_PADDING, paddingTop: 16, paddingBottom: 40 },
   centred: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
   card: {
-    backgroundColor: Colors.navyPale,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: Colors.navy,
+    borderRadius: 18,
+    padding: 22,
     marginVertical: 20,
-    borderWidth: 1,
-    borderColor: Colors.line,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  planName: { fontFamily: Fonts.interBold, fontSize: 18, color: Colors.navy, marginBottom: 4 },
-  planPrice: { fontFamily: Fonts.spaceMonoBold, fontSize: 14, color: Colors.gold, marginBottom: 16 },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  statusLabel: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.slate },
-  statusValue: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.navy },
+  planName: { fontFamily: Fonts.interBold, fontSize: 18, color: Colors.paper, marginBottom: 4 },
+  planPrice: { fontFamily: Fonts.spaceMonoBold, fontSize: 14, color: Colors.goldLight, marginBottom: 16 },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 },
+  statusLabel: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.paperFaint },
+  statusValue: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.paper },
   warningBanner: {
-    backgroundColor: 'rgba(201,162,39,0.12)',
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: Colors.warningBg,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(201,162,39,0.3)',
+    borderColor: Colors.warningBorder,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
   },
-  warningText: { fontFamily: Fonts.inter, fontSize: 13, color: '#8a6c14', lineHeight: 19 },
-  errorText: { color: Colors.danger, fontSize: 13, marginBottom: 12, fontFamily: Fonts.inter },
-  btn: {
-    width: '100%', backgroundColor: Colors.navy, borderRadius: 12,
-    paddingVertical: 15, alignItems: 'center', marginBottom: 12,
+  warningText: {
+    fontFamily: Fonts.inter, fontSize: 13,
+    color: Colors.warning, lineHeight: 19, flex: 1,
   },
-  btnText: { fontFamily: Fonts.interSemiBold, fontSize: 15, color: Colors.goldLight },
-  btnCancel: {
-    width: '100%', borderWidth: 1.5, borderColor: 'rgba(181,70,47,0.4)',
-    borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 12,
+  errorBox: {
+    backgroundColor: Colors.dangerBg,
+    borderWidth: 1,
+    borderColor: Colors.dangerBorder,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
   },
-  btnCancelText: { fontFamily: Fonts.interSemiBold, fontSize: 14, color: Colors.danger },
-  note: { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slateSoft, lineHeight: 18, textAlign: 'center', marginTop: 12 },
+  errorText: {
+    color: Colors.danger, fontSize: 13,
+    fontFamily: Fonts.inter, lineHeight: 19,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: Colors.paperDivider,
+    marginVertical: 2,
+  },
+  note: {
+    fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slateSoft,
+    lineHeight: 18, textAlign: 'center', marginTop: 12,
+  },
 });

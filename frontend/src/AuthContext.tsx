@@ -33,6 +33,14 @@ interface AuthContextValue extends AuthState {
   logout(): Promise<void>;
   refreshSession(): Promise<boolean>;
   refreshSubscriptionStatus(): Promise<void>;
+  updateProfile(patch: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    bio?: string;
+  }): Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -42,6 +50,7 @@ const AuthContext = createContext<AuthContextValue>({
   login: async () => {}, register: async () => {},
   logout: async () => {}, refreshSession: async () => false,
   refreshSubscriptionStatus: async () => {},
+  updateProfile: async () => {},
 });
 
 function isTokenExpired(token: string): boolean {
@@ -206,6 +215,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {}
   }
 
+  async function updateProfile(patch: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    bio?: string;
+  }) {
+    // Call backend — gracefully ignore 404/405 if endpoint not yet live
+    try {
+      await apiClient.patch('/users/me', patch);
+    } catch (e: any) {
+      const status = e?.response?.status;
+      // Only re-throw on non-404/405 to allow optimistic updates while backend is pending
+      if (status && status !== 404 && status !== 405) throw e;
+    }
+
+    // Update local state
+    setState(s => ({
+      ...s,
+      firstName: patch.firstName ?? s.firstName,
+      lastName:  patch.lastName  ?? s.lastName,
+      email:     patch.email     ?? s.email,
+    }));
+
+    // Persist to AsyncStorage
+    const userJson = await AsyncStorage.getItem('user');
+    if (userJson) {
+      const user: StoredUser = JSON.parse(userJson);
+      const updated: StoredUser = {
+        ...user,
+        firstName: patch.firstName ?? user.firstName,
+        lastName:  patch.lastName  ?? user.lastName,
+        email:     patch.email     ?? user.email,
+      };
+      await AsyncStorage.setItem('user', JSON.stringify(updated));
+    }
+  }
+
   const name = computeName(state.firstName, state.lastName);
 
   return (
@@ -217,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refreshSession,
       refreshSubscriptionStatus,
+      updateProfile,
     }}>
       {children}
     </AuthContext.Provider>
