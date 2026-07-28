@@ -16,7 +16,6 @@ import { searchAgencies } from '../api/agencies';
 import { useAuth } from '../AuthContext';
 import { Avatar, Eyebrow, ScreenTitle, StarIcon } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING, TAB_BAR_HEIGHT } from '../theme';
-import * as Location from 'expo-location';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -387,29 +386,9 @@ const panelStyles = StyleSheet.create({
 
 // ─── Location helper ──────────────────────────────────────────────────────────
 async function getLocationLabel(): Promise<string> {
-  // 1. Try device GPS (most accurate)
+  // ip-api.com — reliable, no API key needed
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const [geo] = await Location.reverseGeocodeAsync({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
-      if (geo) {
-        const city = geo.city ?? geo.district ?? geo.subregion ?? geo.region;
-        if (city) return `${city} · Now`;
-      }
-    }
-  } catch {}
-
-  // 2. Fall back to ip-api.com (reliable, no API key)
-  try {
-    const res = await fetch('http://ip-api.com/json/?fields=city,regionName,country,status', {
-      headers: { Accept: 'application/json' },
-    });
+    const res = await fetch('http://ip-api.com/json/?fields=city,regionName,country,status');
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'success' && data.city) {
@@ -418,7 +397,7 @@ async function getLocationLabel(): Promise<string> {
     }
   } catch {}
 
-  // 3. Final fallback
+  // Fallback
   return 'Ghana · Now';
 }
 

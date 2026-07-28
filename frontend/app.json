@@ -28,16 +28,10 @@
     },
     "plugins": [
       "expo-font",
-      "@react-native-community/datetimepicker",
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow CareNest to use your location to show nearby agencies."
-        }
-      ]
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
-      "apiBaseUrl": "https://carenest-2k59.onrender.com"
+      "apiBaseUrl": "http://172.20.10.7:8080"
     }
   }
 }

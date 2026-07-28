@@ -1,10 +1,11 @@
+import React, { useState, useRef } from 'react';
 import {
   ScrollView, View, Text, TextInput, TouchableOpacity,
   StyleSheet, Dimensions, Switch, Modal,
   Animated, KeyboardAvoidingView, Platform,
   TouchableWithoutFeedback, Keyboard, ActivityIndicator,
+} from 'react-native';back, Keyboard, ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -140,14 +141,13 @@ function EditProfileModal({ visible, onClose, initialValues, onSave }: {
   visible: boolean;
   onClose: () => void;
   initialValues: { firstName: string; lastName: string; email: string; phone: string; location: string; bio: string };
-  onSave: (v: typeof initialValues) => Promise<void>;
+  onSave: (v: typeof initialValues) => void;
 }) {
   const [form, setForm] = useState(initialValues);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Reset form when modal opens
-  React.useEffect(() => { if (visible) { setForm(initialValues); setSaveError(null); } }, [visible]);
+  React.useEffect(() => { if (visible) setForm(initialValues); }, [visible]);
 
   function set(key: keyof typeof form) {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
@@ -155,15 +155,10 @@ function EditProfileModal({ visible, onClose, initialValues, onSave }: {
 
   async function handleSave() {
     setSaving(true);
-    setSaveError(null);
-    try {
-      await onSave(form);
-      onClose();
-    } catch (e: any) {
-      setSaveError(e?.response?.data?.message ?? e?.message ?? 'Failed to save. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+    await new Promise(r => setTimeout(r, 600)); // optimistic delay
+    onSave(form);
+    setSaving(false);
+    onClose();
   }
 
   return (
@@ -230,9 +225,6 @@ function EditProfileModal({ visible, onClose, initialValues, onSave }: {
             </ScrollView>
 
             <View style={editStyles.footer}>
-              {saveError ? (
-                <Text style={editStyles.saveError}>{saveError}</Text>
-              ) : null}
               <TouchableOpacity onPress={handleSave} disabled={saving} style={[editStyles.saveBtn, saving && { opacity: 0.6 }]} activeOpacity={0.85}>
                 {saving ? <ActivityIndicator color={Colors.goldLight} /> : <Text style={editStyles.saveBtnText}>Save changes</Text>}
               </TouchableOpacity>
@@ -272,10 +264,6 @@ const editStyles = StyleSheet.create({
   label: { fontFamily: Fonts.interBold, fontSize: 12, color: Colors.navy, marginBottom: 5, marginTop: 14 },
   input: { ...inputStyle },
   footer: { paddingHorizontal: SCREEN_H_PADDING, paddingVertical: 16, borderTopWidth: 1, borderTopColor: Colors.line },
-  saveError: {
-    fontFamily: Fonts.inter, fontSize: 12.5, color: Colors.danger,
-    marginBottom: 8, textAlign: 'center',
-  },
   saveBtn: {
     backgroundColor: Colors.navy, borderRadius: 12, paddingVertical: 15, alignItems: 'center',
     shadowColor: Colors.navy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
@@ -347,24 +335,12 @@ const logoutStyles = StyleSheet.create({
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function AccountScreen({ navigation }: Props) {
-  const { name, firstName, lastName, email, role, token, logout, updateProfile } = useAuth();
+  const { name, firstName, lastName, email, role, token, logout } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // Load persisted notification preference
-  React.useEffect(() => {
-    AsyncStorage.getItem('@carenest_notifications').then(val => {
-      if (val !== null) setNotificationsEnabled(val === 'true');
-    });
-  }, []);
-
-  function handleNotificationToggle(val: boolean) {
-    setNotificationsEnabled(val);
-    AsyncStorage.setItem('@carenest_notifications', String(val));
-  }
 
   // Local profile overrides (saved locally until backend supports PATCH /me)
   const [localProfile, setLocalProfile] = useState({
@@ -416,9 +392,9 @@ export default function AccountScreen({ navigation }: Props) {
 
   async function handleLogoutConfirm() {
     setShowLogoutModal(false);
-    setShowLogoutModal(false);
     await logout();
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    navigation.navigate('Login');
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -480,7 +456,7 @@ export default function AccountScreen({ navigation }: Props) {
           </View>
           <Switch
             value={notificationsEnabled}
-            onValueChange={handleNotificationToggle}
+            onValueChange={setNotificationsEnabled}
             trackColor={{ false: Colors.line, true: Colors.navy }}
             thumbColor={notificationsEnabled ? Colors.goldLight : Colors.slateSoft}
             ios_backgroundColor={Colors.line}
@@ -505,17 +481,7 @@ export default function AccountScreen({ navigation }: Props) {
         visible={showEditModal}
         onClose={() => setShowEditModal(false)}
         initialValues={localProfile}
-        onSave={async (vals) => {
-          await updateProfile({
-            firstName: vals.firstName,
-            lastName:  vals.lastName,
-            email:     vals.email,
-            phone:     vals.phone,
-            location:  vals.location,
-            bio:       vals.bio,
-          });
-          setLocalProfile(vals);
-        }}
+        onSave={(vals) => setLocalProfile(vals)}
       />
 
       <LogoutModal

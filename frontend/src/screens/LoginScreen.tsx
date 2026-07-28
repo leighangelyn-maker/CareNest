@@ -13,14 +13,15 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Animated,
-} from 'react-native';import { SafeAreaView } from 'react-native-safe-area-context';
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useAuth } from '../AuthContext';
 import apiClient from '../api/client';
 import {
-  Eyebrow, Field, ScreenTitle, Sub, inputStyle, Btn,
+  Field, ScreenTitle, Sub, inputStyle, Btn,
 } from '../components/atoms';
 import CareNestLogo from '../components/CareNestLogo';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
@@ -167,7 +168,7 @@ export default function LoginScreen({ navigation }: Props) {
             {/* Logo */}
             <View style={styles.header}>
               <View style={styles.logoWrap}>
-                <CareNestLogo size={isSmallScreen ? 80 : 100} showText />
+                <CareNestLogo size={isSmallScreen ? 72 : 90} showText />
               </View>
               <Sub style={{ textAlign: 'center' }}>Sign in to your CareNest account.</Sub>
             </View>

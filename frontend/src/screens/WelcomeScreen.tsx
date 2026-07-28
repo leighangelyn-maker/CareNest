@@ -53,12 +53,14 @@ export default function WelcomeScreen({ navigation }: Props) {
       {/* Hero */}
       <View style={styles.hero}>
         <HeroDeco />
+
+        {/* Logo — big and centred */}
         <View style={styles.logoWrap}>
-          <CareNestLogo size={isSmall ? 96 : 124} showText />
+          <CareNestLogo size={isSmall ? 100 : 130} showText />
         </View>
 
         <ScreenTitle
-          size={isSmall ? 21 : 26}
+          size={isSmall ? 19 : 23}
           style={styles.headline}
         >
           Verified household help,{'\n'}on your terms
