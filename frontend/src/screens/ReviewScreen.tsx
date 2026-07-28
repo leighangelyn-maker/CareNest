@@ -20,7 +20,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useBookings } from '../BookingContext';
 import { submitReview } from '../api/reviews';
-import { BackBtn, Field, ScreenTitle, Sub, inputStyle, Btn } from '../components/atoms';
+import { BackBtn, Btn, Field, ScreenTitle, Sub, inputStyle } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Review'>;
@@ -67,7 +67,7 @@ function SuccessView({ onDone }: { onDone: () => void }) {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.paper }}>
       <View style={successStyles.container}>
         <Animated.View style={[successStyles.icon, { transform: [{ scale }] }]}>
           <Svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke={Colors.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +91,10 @@ function SuccessView({ onDone }: { onDone: () => void }) {
 }
 
 const successStyles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SCREEN_H_PADDING },
+  container: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: SCREEN_H_PADDING,
+  },
   icon: {
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: Colors.successBg, borderWidth: 2, borderColor: Colors.success,
@@ -102,7 +105,7 @@ const successStyles = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function ReviewScreen({ navigation, route }: Props) {
   const { bookingId } = route.params;
-  const { markReviewed } = useBookings();
+  const { markReviewed, bookings } = useBookings();
 
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
@@ -111,6 +114,11 @@ export default function ReviewScreen({ navigation, route }: Props) {
   const [submitted, setSubmitted] = useState(false);
 
   const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  // Check if this is a mock booking
+  const booking = bookings.find(b => b.id === bookingId);
+  const isMock = bookingId.startsWith('mock-');
+  const isNotCompleted = booking && booking.status !== 'COMPLETED';
 
   function triggerShake() {
     shakeAnim.setValue(0);
@@ -137,7 +145,27 @@ export default function ReviewScreen({ navigation, route }: Props) {
       markReviewed(bookingId);
       setSubmitted(true);
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? 'Failed to submit review. Please try again.');
+      const status = e?.response?.status;
+      const msg: string =
+        e?.response?.data?.message ??
+        e?.response?.data?.error ??
+        e?.response?.data?.data?.error ??
+        e?.message ?? '';
+
+      if (status === 403) {
+        setError(
+          'You are not allowed to review this booking. This can happen if:\n' +
+          '• The booking has not been completed yet\n' +
+          '• You have already submitted a review for this booking\n' +
+          '• This booking does not belong to your account'
+        );
+      } else if (status === 422 || msg.toLowerCase().includes('already')) {
+        setError('You have already submitted a review for this booking.');
+      } else if (status === 404) {
+        setError('Booking not found. It may have been deleted.');
+      } else {
+        setError(msg || 'Failed to submit review. Please try again.');
+      }
       triggerShake();
     } finally {
       setLoading(false);
@@ -145,7 +173,14 @@ export default function ReviewScreen({ navigation, route }: Props) {
   }
 
   if (submitted) {
-    return <SuccessView onDone={() => navigation.navigate('MainTabs')} />;
+    return (
+      <SuccessView
+        onDone={() => navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs', params: { screen: 'Bookings' } }],
+        })}
+      />
+    );
   }
 
   return (
@@ -169,7 +204,18 @@ export default function ReviewScreen({ navigation, route }: Props) {
                 Your review helps other families choose with confidence.
               </Sub>
 
-              {/* Star row with shake on no selection */}
+              {/* Warning if booking not completed */}
+              {(isMock || isNotCompleted) ? (
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningText}>
+                    {isMock
+                      ? '⚠️ This is a demo booking. Reviews for demo bookings are not sent to the server — but you can still try the flow.'
+                      : '⚠️ This booking is not marked as completed yet. The agency must mark it complete before you can submit a review.'}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Stars */}
               <Animated.View
                 style={[styles.stars, { transform: [{ translateX: shakeAnim }] }]}
               >
@@ -178,7 +224,6 @@ export default function ReviewScreen({ navigation, route }: Props) {
                 ))}
               </Animated.View>
 
-              {/* Rating label */}
               {stars > 0 && (
                 <Text style={styles.ratingLabel}>
                   {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent!'][stars]}
@@ -241,6 +286,21 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 8,
   },
+  warningBox: {
+    width: '100%',
+    backgroundColor: Colors.warningBg,
+    borderWidth: 1,
+    borderColor: Colors.warningBorder,
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+  },
+  warningText: {
+    fontFamily: Fonts.inter,
+    fontSize: 13,
+    color: Colors.warning,
+    lineHeight: 20,
+  },
   stars: {
     flexDirection: 'row',
     gap: 10,
@@ -268,7 +328,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.inter,
     fontSize: 13,
     color: Colors.danger,
-    lineHeight: 19,
+    lineHeight: 20,
   },
   loadingBtn: {
     backgroundColor: Colors.success,

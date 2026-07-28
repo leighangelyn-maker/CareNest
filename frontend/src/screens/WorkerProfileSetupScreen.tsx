@@ -86,7 +86,10 @@ export default function WorkerProfileSetupScreen({ navigation }: Props) {
         availableDays: selectedDays.join(','),
       });
       setSaved(true);
-      setTimeout(() => navigation.replace('MainTabs'), 1200);
+      setTimeout(() => navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', params: { screen: 'Home' } }],
+      }), 1200);
     } catch (e: any) {
       setError(e?.response?.data?.error ?? 'Failed to save profile. Please try again.');
       triggerShake();

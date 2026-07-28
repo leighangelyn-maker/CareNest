@@ -74,10 +74,16 @@ export default function ConfirmScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <Btn onPress={() => navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] })}>
+      <Btn onPress={() => navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', params: { screen: 'Bookings' } }],
+      })}>
         View my bookings
       </Btn>
-      <Btn variant="secondary" onPress={() => navigation.navigate('MainTabs')} style={{ marginTop: 10 }}>
+      <Btn variant="secondary" onPress={() => navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', params: { screen: 'Home' } }],
+      })} style={{ marginTop: 10 }}>
         Back to search
       </Btn>
     </SafeAreaView>

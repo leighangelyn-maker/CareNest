@@ -180,7 +180,8 @@ export default function RegisterScreen({ navigation }: Props) {
     if (!email.trim()) e.email = 'Email is required.';
     else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email address.';
     if (!phone.trim()) e.phone = 'Phone number is required.';
-    if (password.length < 8) e.password = 'Password must be at least 8 characters.';
+    // Minimum length only — strength rules enforced by backend
+    if (password.length < 8) e.password = 'Password must be at least 8 characters (include uppercase, lowercase, number and special character e.g. Abc@1234).';
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -314,14 +315,14 @@ export default function RegisterScreen({ navigation }: Props) {
             </Field>
 
             {/* Password with eye toggle */}
-            <Field label="Password * (min 8 chars)">
+            <Field label="Password *">
               <View style={styles.passwordRow}>
                 <TextInput
                   style={[inputStyle, styles.passwordInput, fieldErrors.password && styles.inputError]}
                   value={password}
                   onChangeText={(v) => { setPassword(v); setFieldErrors(p => ({ ...p, password: '' })); }}
                   secureTextEntry={!showPassword}
-                  placeholder="••••••••"
+                  placeholder="e.g. Abc@1234"
                   placeholderTextColor={Colors.slateSoft}
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
@@ -337,6 +338,9 @@ export default function RegisterScreen({ navigation }: Props) {
                   <EyeIcon visible={showPassword} />
                 </TouchableOpacity>
               </View>
+              <Text style={styles.passwordHint}>
+                Min 8 chars · uppercase · lowercase · number · special character (e.g. Abc@1234)
+              </Text>
               {fieldErrors.password ? (
                 <Text style={styles.fieldError}>{fieldErrors.password}</Text>
               ) : null}
@@ -430,6 +434,13 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
+  passwordHint: {
+    fontFamily: Fonts.inter,
+    fontSize: 11,
+    color: Colors.slateSoft,
+    marginTop: 5,
+    lineHeight: 16,
+  },
   loginHint: {
     textAlign: 'center',
     marginTop: 20,

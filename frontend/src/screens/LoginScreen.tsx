@@ -84,7 +84,10 @@ export default function LoginScreen({ navigation }: Props) {
     setUnverifiedEmail(null);
     try {
       await login(email.trim().toLowerCase(), password);
-      navigation.replace('MainTabs');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', params: { screen: 'Home' } }],
+      });
     } catch (e: any) {
       const status = e?.response?.status;
       const raw: string =

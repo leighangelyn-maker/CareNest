@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
 import {
   ScrollView, View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Dimensions, Switch, Modal, Alert,
+  StyleSheet, Dimensions, Switch, Modal,
   Animated, KeyboardAvoidingView, Platform,
   TouchableWithoutFeedback, Keyboard, ActivityIndicator,
 } from 'react-native';
@@ -417,9 +416,9 @@ export default function AccountScreen({ navigation }: Props) {
 
   async function handleLogoutConfirm() {
     setShowLogoutModal(false);
+    setShowLogoutModal(false);
     await logout();
-    navigation.navigate('Login');
-  }
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
 
   return (
     <SafeAreaView style={styles.safeArea}>

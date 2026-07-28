@@ -151,8 +151,8 @@ function AccountStep({ onNext, defaultValues }: {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           <ProgressBar current={1} total={3} />
-          <ScreenTitle size={SCREEN_WIDTH < 360 ? 20 : 24}>Create your worker account</ScreenTitle>
-          <Sub style={{ marginBottom: 20 }}>Join CareNest as a verified domestic worker and get booked by families.</Sub>
+          <ScreenTitle size={SCREEN_WIDTH < 360 ? 20 : 24}>Create Your Agency Account</ScreenTitle>
+          <Sub style={{ marginBottom: 20 }}>Join CareNest as a verified domestic agency and connect with families near you.</Sub>
 
           <Field label="Full name *">
             <TextInput
@@ -310,7 +310,7 @@ function ProfileStep({ onSubmit, onBack }: {
 
           {error ? <ErrorBox message={error} anim={anim} /> : null}
 
-          <PrimaryBtn label="Create worker account →" onPress={handleSubmit} />
+          <PrimaryBtn label="Create agency account →" onPress={handleSubmit} />
 
         </ScrollView>
       </KeyboardAvoidingView>

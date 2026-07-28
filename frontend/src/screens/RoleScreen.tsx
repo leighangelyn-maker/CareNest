@@ -26,8 +26,8 @@ export default function RoleScreen({ navigation }: Props) {
       onPress: () => navigation.navigate('Register'),
     },
     {
-      label: "I'm looking for work",
-      sub: 'Register as a nanny, cook, cleaner & more',
+      label: 'I provide domestic services',
+      sub: 'Register your agency and get booked by families',
       icon: (
         <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={Colors.goldLight} strokeWidth="1.8">
           <Circle cx="12" cy="8" r="4" />
