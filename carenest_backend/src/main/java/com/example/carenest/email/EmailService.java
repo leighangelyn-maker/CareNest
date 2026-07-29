@@ -17,17 +17,25 @@ import java.io.IOException;
 @Service
 public class EmailService {
 
-    @Value("${sendgrid.api-key}")
+    @Value("${sendgrid.api-key:dev-key-not-set}")
     private String apiKey;
 
-    @Value("${sendgrid.from-email}")
+    @Value("${sendgrid.from-email:noreply@carenest.dev}")
     private String fromEmail;
 
-    @Value("${app.base-url}")
+    @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
 
     public void sendVerificationEmail(String toEmail, String firstName, String token) {
         String verificationLink = baseUrl + "/auth/verify-email?token=" + token;
+
+        // In dev (no real SendGrid key), just log the link so registration doesn't crash
+        if (apiKey == null || apiKey.startsWith("dev-") || apiKey.contains("xxxxxxx")) {
+            log.warn("=== DEV MODE: SendGrid not configured. Verification link for {} ===", toEmail);
+            log.warn("=== VERIFY URL: {} ===", verificationLink);
+            log.warn("=== TOKEN: {} ===", token);
+            return;
+        }
 
         String htmlContent = """
                 <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
@@ -58,8 +66,8 @@ public class EmailService {
             Response response = sg.api(request);
             log.info("SendGrid response status: {}", response.getStatusCode());
         } catch (IOException e) {
-            log.error("Failed to send verification email to {}", toEmail, e);
-            throw new RuntimeException("Failed to send verification email", e);
+            // Log but don't crash — email failure should not block registration
+            log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage());
         }
     }
 }

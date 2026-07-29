@@ -42,6 +42,9 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final FamilyProfileRepository familyProfileRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${sendgrid.api-key:dev-key-not-set}")
+    private String sendgridApiKey;
+
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -69,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
         log.info("User registered successfully: {}", user.getEmail());
 
+<<<<<<< HEAD
         // Every family-role user needs a FamilyProfile row - bookings,
         // addresses, saved agencies, and reviews all hang off this, not off
         // the User directly. Emergency contact info isn't collected at
@@ -80,6 +84,15 @@ public class AuthServiceImpl implements AuthService {
         familyProfile.setLastName(user.getLastName());
         familyProfileRepository.save(familyProfile);
         log.info("Family profile created for user: {}", user.getEmail());
+=======
+        // In dev (SendGrid not configured), auto-activate so login works without email verification
+        if (sendgridApiKey == null || sendgridApiKey.startsWith("dev-") || sendgridApiKey.contains("xxxxxxx")) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setEmailVerifiedAt(java.time.LocalDateTime.now());
+            user = userRepository.save(user);
+            log.warn("DEV MODE: Auto-activated user {} (no email service configured)", user.getEmail());
+        }
+>>>>>>> 73a3d35b74046501ae8dbe56d2d1375b888d5a86
 
         createAndSendVerificationToken(user);
 
@@ -335,6 +348,12 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
         log.info("Admin registered successfully: {}", user.getEmail());
+
+        if (sendgridApiKey == null || sendgridApiKey.startsWith("dev-") || sendgridApiKey.contains("xxxxxxx")) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setEmailVerifiedAt(java.time.LocalDateTime.now());
+            user = userRepository.save(user);
+        }
 
         String accessToken = jwtUtils.generateAccessToken(
                 user.getEmail(),
