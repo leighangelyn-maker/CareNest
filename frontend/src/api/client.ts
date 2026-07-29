@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Base URL: prefer app.json extra.apiBaseUrl, then platform default
 const DEFAULT_BASE_URL =
   Platform.OS === 'android'
-    ? 'http://10.0.2.2:8080'
+    ? 'https://carenest-2k59.onrender.com'
     : 'http://localhost:8080';
 
 export const BASE_URL: string =
