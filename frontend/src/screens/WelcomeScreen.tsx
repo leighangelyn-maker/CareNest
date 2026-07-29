@@ -54,10 +54,10 @@ export default function WelcomeScreen({ navigation }: Props) {
       <View style={styles.hero}>
         <HeroDeco />
 
-        Logo — big and centred
+        {/* Logo — big and centred */}
         <View style={styles.container}>
       <Image
-        source={require('../assets/carenest-logo.png')}
+        source={require('../../assets/carenest-logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />

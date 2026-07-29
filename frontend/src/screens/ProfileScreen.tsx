@@ -123,15 +123,12 @@ export default function ProfileScreen({ navigation, route }: Props) {
           <Btn
             onPress={() => navigation.navigate('BookAgency', {
               agency: {
-                id: worker.id ?? 'worker-direct',
+                id: worker.workerId != null ? String(worker.workerId) : 'worker-direct',
                 name: worker.name,
                 city: worker.location ?? 'Ghana',
                 slug: worker.name.toLowerCase().replace(/\s+/g, '-'),
                 averageRating: worker.avgRating ?? 0,
                 totalReviews: worker.totalRatings ?? 0,
-                isAcceptingBookings: true,
-                categories: [worker.serviceType ?? 'General'],
-                description: worker.bio ?? '',
                 logoUrl: null,
               },
             })}
