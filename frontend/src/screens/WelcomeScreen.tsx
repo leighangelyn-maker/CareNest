@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { Image, View, Text, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { Btn, ScreenTitle, Sub } from '../components/atoms';
-import CareNestLogo from '../components/CareNestLogo';
+// import CareNestLogo from '../components/CareNestLogo';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
@@ -54,10 +54,14 @@ export default function WelcomeScreen({ navigation }: Props) {
       <View style={styles.hero}>
         <HeroDeco />
 
-        {/* Logo — big and centred */}
-        <View style={styles.logoWrap}>
-          <CareNestLogo size={isSmall ? 100 : 130} showText />
-        </View>
+        Logo — big and centred
+        <View style={styles.container}>
+      <Image
+        source={require('../assets/carenest-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+    </View>
 
         <ScreenTitle
           size={isSmall ? 19 : 23}
@@ -94,6 +98,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.paper,
+     alignItems: 'center',
+    justifyContent: 'center',
   },
   hero: {
     flex: 1,
@@ -102,6 +108,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_H_PADDING,
     paddingTop: isSmall ? 12 : 24,
   },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 24,
+  },
+
   logoWrap: {
     marginBottom: isSmall ? 20 : 30,
     shadowColor: Colors.navy,

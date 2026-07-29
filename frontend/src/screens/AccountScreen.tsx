@@ -4,7 +4,6 @@ import {
   StyleSheet, Dimensions, Switch, Modal,
   Animated, KeyboardAvoidingView, Platform,
   TouchableWithoutFeedback, Keyboard, ActivityIndicator,
-} from 'react-native';back, Keyboard, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
