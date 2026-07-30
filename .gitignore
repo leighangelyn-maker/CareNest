@@ -1,0 +1,27 @@
+# Node / Frontend
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.log
+npm-debug.log*
+
+# Java / Backend
+carenest_backend/target/
+carenest_backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (secrets)
+.env
+.env.local
+*.properties.local
