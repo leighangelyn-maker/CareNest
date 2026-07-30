@@ -112,10 +112,7 @@ export default function BookingsScreen({ navigation }: Props) {
             Once you book an agency, it'll show up here with all the details.
           </Text>
           <View style={{ marginTop: 16, width: '100%' }}>
-            <Btn onPress={() => navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainTabs', params: { screen: 'Home' } }],
-            })}>Find an agency</Btn>
+            <Btn onPress={() => navigation.navigate('Home')}>Find an agency</Btn>
           </View>
         </View>
       </SafeAreaView>

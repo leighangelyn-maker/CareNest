@@ -54,14 +54,14 @@ export default function WelcomeScreen({ navigation }: Props) {
       <View style={styles.hero}>
         <HeroDeco />
 
-       {/* Logo — big and centred*/}
-        <View style={styles.container}>
-      <Image
-        source={require('../../assets/carenest-logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-    </View>
+        {/* Logo — big and centred */}
+        <View style={styles.logoWrap}>
+          <Image
+            source={require('../../assets/carenest-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
 
         <ScreenTitle
           size={isSmall ? 19 : 23}
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.paper,
-     alignItems: 'center',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   hero: {
@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
     height: 150,
     marginBottom: 24,
   },
-
   logoWrap: {
     marginBottom: isSmall ? 20 : 30,
     shadowColor: Colors.navy,
