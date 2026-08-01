@@ -12,7 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, MainTabParamList, ApiBooking, BookingStatus } from '../types';
+import { RootStackParamList, MainTabParamList, EnrichedBooking, BookingStatus } from '../types';
 import { useBookings } from '../BookingContext';
 import { Btn, CalendarIcon, Eyebrow, ScreenTitle } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING, TAB_BAR_HEIGHT } from '../theme';
@@ -130,20 +130,20 @@ export default function BookingsScreen({ navigation }: Props) {
         keyExtractor={(b) => b.id}
         contentContainerStyle={[styles.list, { paddingBottom: TAB_BAR_HEIGHT + insets.bottom }]}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item: b }) => {
+        renderItem={({ item: b }: { item: EnrichedBooking }) => {
           const { bg, text } = badgeStyle(b.status);
           return (
             <TouchableOpacity
               style={styles.item}
               onPress={() => navigation.navigate('BookingDetail', { bookingId: b.id })}
               activeOpacity={0.8}
-              accessibilityLabel={`${b.agency.name} booking, ${STATUS_LABEL[b.status]}`}
+              accessibilityLabel={`${b.agencyName} booking, ${STATUS_LABEL[b.status]}`}
               accessibilityRole="button"
             >
               <View style={styles.itemTop}>
                 <View style={styles.itemLeft}>
-                  <Text style={styles.itemAgency} numberOfLines={1}>{b.agency.name}</Text>
-                  <Text style={styles.itemCategory}>{b.category}</Text>
+                  <Text style={styles.itemAgency} numberOfLines={1}>{b.agencyName}</Text>
+                  <Text style={styles.itemCategory}>{b.categoryName}</Text>
                   <Text style={styles.itemMeta}>{formatDate(b.startTime)}</Text>
                 </View>
                 <View style={styles.itemRight}>

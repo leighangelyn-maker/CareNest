@@ -34,11 +34,13 @@ import BookScreen from './src/screens/BookScreen';
 import PayScreen from './src/screens/PayScreen';
 import ConfirmScreen from './src/screens/ConfirmScreen';
 import BookingDetailScreen from './src/screens/BookingDetailScreen';
+import AgencyBookingDetailScreen from './src/screens/AgencyBookingDetailScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
-import MessagesScreen from './src/screens/MessagesScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import WorkerProfileSetupScreen from './src/screens/WorkerProfileSetupScreen';
 import EmailVerifiedScreen from './src/screens/EmailVerifiedScreen';
+import AddAddressScreen from './src/screens/AddAddressScreen';
+import AddWorkerScreen from './src/screens/AddWorkerScreen';
 import MainTabs from './src/navigation/MainTabs';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -81,9 +83,11 @@ function AppNavigator() {
       <Stack.Screen name="Pay" component={PayScreen} />
       <Stack.Screen name="Confirm" component={ConfirmScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
+      <Stack.Screen name="AgencyBookingDetail" component={AgencyBookingDetailScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
-      <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+      <Stack.Screen name="AddAddress" component={AddAddressScreen} />
+      <Stack.Screen name="AddWorker" component={AddWorkerScreen} />
       <Stack.Screen name="WorkerProfileSetup" component={WorkerProfileSetupScreen} />
       <Stack.Screen name="EmailVerified" component={EmailVerifiedScreen} />
     </Stack.Navigator>

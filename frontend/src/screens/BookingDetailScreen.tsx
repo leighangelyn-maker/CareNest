@@ -4,10 +4,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, ApiBooking, BookingStatus } from '../types';
-import { getBooking } from '../api/bookings';
+import { RootStackParamList, ApiBooking, BookingStatus, ApiServiceCategory } from '../types';
+import { getBooking, getServiceCategories } from '../api/bookings';
+import { getAgency } from '../api/agencies';
 import { useBookings } from '../BookingContext';
-import { MOCK_BOOKINGS } from '../data';
 import { BackBtn, Btn, Divider, Eyebrow, Row, ScreenTitle, Sub } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
@@ -47,6 +47,8 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
   const { bookings, cancelBooking } = useBookings();
 
   const [booking, setBooking] = useState<ApiBooking | null>(null);
+  const [agencyName, setAgencyName] = useState<string>('');
+  const [categoryName, setCategoryName] = useState<string>('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -56,20 +58,28 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
   }, [bookingId]);
 
   async function loadBooking() {
-    // 1. Check context (fastest — covers newly created bookings)
+    // 1. Check context first (already enriched — covers newly created bookings)
     const fromContext = bookings.find(b => b.id === bookingId);
-    if (fromContext) { setBooking(fromContext); return; }
+    if (fromContext) {
+      setBooking(fromContext);
+      setAgencyName((fromContext as any).agencyName ?? '');
+      setCategoryName((fromContext as any).categoryName ?? '');
+      if ((fromContext as any).agencyName && (fromContext as any).categoryName) return;
+    }
 
-    // 2. Check mock data
-    const fromMock = MOCK_BOOKINGS.find(b => b.id === bookingId);
-    if (fromMock) { setBooking(fromMock); return; }
-
-    // 3. Fetch from API
+    // 2. Fetch from API (plain ApiBooking — needs name resolution)
     try {
-      const data = await getBooking(bookingId);
+      const data = fromContext ?? await getBooking(bookingId);
       setBooking(data);
+
+      const [agency, cats] = await Promise.all([
+        getAgency(data.agencyId).catch(() => null),
+        getServiceCategories().catch(() => [] as ApiServiceCategory[]),
+      ]);
+      setAgencyName((agency as any)?.name ?? (agency as any)?.data?.name ?? 'Agency');
+      const match = cats.find(c => c.id === data.serviceCategoryId);
+      setCategoryName(match?.name ?? 'Service');
     } catch (e: any) {
-      // Last resort — show a generic not-found state
       setLoadError('Booking not found. It may have been cancelled or expired.');
     }
   }
@@ -122,9 +132,9 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
       <View style={styles.header}>
         <BackBtn onPress={() => navigation.goBack()} />
         <Eyebrow>Booking detail</Eyebrow>
-        <ScreenTitle>{b.agency.name}</ScreenTitle>
+        <ScreenTitle>{agencyName || '—'}</ScreenTitle>
         <View style={styles.headerMeta}>
-          <Sub>{b.category}</Sub>
+          <Sub>{categoryName || '—'}</Sub>
           <View style={[styles.statusPill, { backgroundColor: statusColor(b.status) + '22',
               borderRadius: 100, borderWidth: 1, borderColor: statusColor(b.status) + '44' }]}>
             <View style={[styles.statusDot, { backgroundColor: statusColor(b.status) }]} />
@@ -163,15 +173,10 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
       <View style={styles.actions}>
         {cancelError ? <Text style={styles.inlineError}>{cancelError}</Text> : null}
 
-        <Btn variant="secondary"
-          onPress={() => navigation.navigate('Messages', { conversationId: b.id })}>
-          Message agency
-        </Btn>
-
         {canReview && (
           <Btn
             onPress={() => navigation.navigate('Review', { bookingId: b.id })}
-            style={{ marginTop: 10, backgroundColor: Colors.success }}
+            style={{ backgroundColor: Colors.success }}
             textColor={Colors.paper}>
             Leave a review
           </Btn>
@@ -179,7 +184,7 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
 
         {canCancel && (
           <Btn variant="ghost" onPress={handleCancel}
-          style={{ marginTop: 10, borderColor: cancelling ? Colors.line : Colors.dangerBorder, opacity: cancelling ? 0.5 : 1 }}>
+          style={{ marginTop: canReview ? 10 : 0, borderColor: cancelling ? Colors.line : Colors.dangerBorder, opacity: cancelling ? 0.5 : 1 }}>
             {cancelling ? 'Cancelling…' : 'Cancel booking'}
           </Btn>
         )}

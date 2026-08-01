@@ -115,9 +115,7 @@ export default function ReviewScreen({ navigation, route }: Props) {
 
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  // Check if this is a mock booking
   const booking = bookings.find(b => b.id === bookingId);
-  const isMock = bookingId.startsWith('mock-');
   const isNotCompleted = booking && booking.status !== 'COMPLETED';
 
   function triggerShake() {
@@ -205,12 +203,10 @@ export default function ReviewScreen({ navigation, route }: Props) {
               </Sub>
 
               {/* Warning if booking not completed */}
-              {(isMock || isNotCompleted) ? (
+              {isNotCompleted ? (
                 <View style={styles.warningBox}>
                   <Text style={styles.warningText}>
-                    {isMock
-                      ? '⚠️ This is a demo booking. Reviews for demo bookings are not sent to the server — but you can still try the flow.'
-                      : '⚠️ This booking is not marked as completed yet. The agency must mark it complete before you can submit a review.'}
+                    ⚠️ This booking is not marked as completed yet. The agency must mark it complete before you can submit a review.
                   </Text>
                 </View>
               ) : null}

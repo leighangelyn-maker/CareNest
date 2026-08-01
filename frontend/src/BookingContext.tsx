@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { ApiBooking } from './types';
-import { getBookings, cancelBooking as apiCancel } from './api/bookings';
-import { MOCK_BOOKINGS } from './data';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import { ApiBooking, EnrichedBooking, ApiServiceCategory } from './types';
+import { getBookingsForFamily, cancelBooking as apiCancel, getServiceCategories } from './api/bookings';
+import { getAgency } from './api/agencies';
+import { useAuth } from './AuthContext';
 
 interface BookingContextValue {
-  bookings: ApiBooking[];
+  bookings: EnrichedBooking[];
   loading: boolean;
   error: string | null;
   fetchHistory(): Promise<void>;
@@ -24,42 +25,75 @@ const BookingContext = createContext<BookingContextValue>({
 });
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  // Seed with mock bookings so the list is never empty on first load
-  const [bookings, setBookings] = useState<ApiBooking[]>(MOCK_BOOKINGS);
+  const [bookings, setBookings] = useState<EnrichedBooking[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fetched, setFetched] = useState(false);
+  const { familyId } = useAuth();
 
-  const fetchHistory = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const categoryCache = useRef<Map<string, string>>(new Map());
+  const agencyCache = useRef<Map<string, string>>(new Map());
+
+  const resolveCategoryName = useCallback(async (id: string): Promise<string> => {
+    if (categoryCache.current.has(id)) return categoryCache.current.get(id)!;
+    if (categoryCache.current.size === 0) {
+      try {
+        const cats: ApiServiceCategory[] = await getServiceCategories();
+        cats.forEach(c => categoryCache.current.set(c.id, c.name));
+      } catch {}
+    }
+    return categoryCache.current.get(id) ?? 'Service';
+  }, []);
+
+  const resolveAgencyName = useCallback(async (id: string): Promise<string> => {
+    if (agencyCache.current.has(id)) return agencyCache.current.get(id)!;
     try {
-      const apiData = await getBookings();
-      if (apiData.length > 0) {
-        // Merge: real data + any locally-created mock bookings not in API result
-        setBookings(prev => {
-          const apiIds = new Set(apiData.map(b => b.id));
-          const localOnly = prev.filter(b => !apiIds.has(b.id));
-          return [...apiData, ...localOnly];
-        });
-      }
-      // If API returns only mock data (length matches MOCK_BOOKINGS exactly), keep existing
-      setFetched(true);
+      const agency = await getAgency(id);
+      const name = (agency as any)?.name ?? (agency as any)?.data?.name ?? 'Agency';
+      agencyCache.current.set(id, name);
+      return name;
+    } catch {
+      return 'Agency';
+    }
+  }, []);
+
+  const enrich = useCallback(async (raw: ApiBooking[]): Promise<EnrichedBooking[]> => {
+    return Promise.all(
+      raw.map(async (b) => {
+        const [categoryName, agencyName] = await Promise.all([
+          resolveCategoryName(b.serviceCategoryId),
+          resolveAgencyName(b.agencyId),
+        ]);
+        return { ...b, categoryName, agencyName };
+      })
+    );
+  }, [resolveCategoryName, resolveAgencyName]);
+
+ const fetchHistory = useCallback(async () => {
+    if (!familyId) return;
+    setLoading(true);
+    try {
+      const raw = await getBookingsForFamily(familyId);
+      const enriched = await enrich(raw);
+      setBookings(enriched);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load bookings');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [familyId, enrich]);
 
-  // Add a new booking to the top of the list immediately
   const addBooking = useCallback((b: ApiBooking) => {
-    setBookings(prev => {
-      // Remove any existing entry with same id, then prepend
-      const filtered = prev.filter(existing => existing.id !== b.id);
-      return [b, ...filtered];
+    Promise.all([
+      resolveCategoryName(b.serviceCategoryId),
+      resolveAgencyName(b.agencyId),
+    ]).then(([categoryName, agencyName]) => {
+      const enriched: EnrichedBooking = { ...b, categoryName, agencyName };
+      setBookings(prev => {
+        const filtered = prev.filter(existing => existing.id !== b.id);
+        return [enriched, ...filtered];
+      });
     });
-  }, []);
+  }, [resolveCategoryName, resolveAgencyName]);
 
   const cancelBooking = useCallback(async (id: string) => {
     await apiCancel(id);

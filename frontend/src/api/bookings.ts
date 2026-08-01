@@ -1,104 +1,83 @@
 import apiClient from './client';
-import { ApiBooking, BookingCreateRequest, PaymentInitResponse } from '../types';
-import { MOCK_BOOKINGS, getMockAgencies } from '../data';
+import { ApiBooking, ApiServiceCategory, ApiFamilyAddress, BookingCreateRequest, PaymentInitResponse } from '../types';
 
-/**
- * Fetch all bookings for the authenticated family.
- * Falls back to mock data on 404 or empty response.
- */
-export async function getBookings(): Promise<ApiBooking[]> {
-  try {
-    const res = await apiClient.get('/bookings');
-    const raw = res.data;
-    let data: ApiBooking[] = [];
-    if (Array.isArray(raw)) data = raw;
-    else if (Array.isArray(raw?.page?.data)) data = raw.page.data;
-    else if (Array.isArray(raw?.data)) data = raw.data;
-
-    return data.length > 0 ? data : MOCK_BOOKINGS;
-  } catch {
-    return MOCK_BOOKINGS;
-  }
+export async function getBookingsForFamily(familyId: string): Promise<ApiBooking[]> {
+  const res = await apiClient.get(`/bookings/family/${familyId}`);
+  const raw = res.data;
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.data)) return raw.data;
+  if (Array.isArray(raw?.page?.data)) return raw.page.data;
+  return [];
 }
 
 export async function getBooking(id: string): Promise<ApiBooking> {
-  // Check mock data first
-  if (id.startsWith('mock-')) {
-    const mock = MOCK_BOOKINGS.find(b => b.id === id);
-    if (mock) return mock;
-  }
-  try {
-    const res = await apiClient.get<ApiBooking>(`/bookings/${id}`);
-    return res.data;
-  } catch {
-    const mock = MOCK_BOOKINGS.find(b => b.id === id);
-    if (mock) return mock;
-    throw new Error('Booking not found');
-  }
+  const res = await apiClient.get<{ data: ApiBooking }>(`/bookings/${id}`);
+  return (res.data as any)?.data ?? res.data;
 }
 
-/**
- * Create a booking. For mock agencies (id starts with 'mock-'), 
- * create a local mock booking immediately so the demo flow works end-to-end.
- */
 export async function createBooking(req: BookingCreateRequest): Promise<ApiBooking> {
-  // Mock agencies can't be booked via real API — create locally
-  if (req.agencyId.startsWith('mock-')) {
-    const MOCK_AGENCIES = getMockAgencies();
-    const agency = MOCK_AGENCIES.find(a => a.id === req.agencyId) ?? MOCK_AGENCIES[0];
-    const mockBooking: ApiBooking = {
-      id: `mock-booking-new-${Date.now()}`,
-      status: 'PENDING_ASSIGNMENT',
-      agency: { id: agency.id, name: agency.name },
-      category: req.familyNotes ?? agency.categories[0] ?? 'Service',
-      startTime: req.startTime,
-      endTime: req.endTime,
-      totalHours: (new Date(req.endTime).getTime() - new Date(req.startTime).getTime()) / 3600000,
-      subtotalMinorUnits: 50000,
-      platformFeeMinorUnits: 5000,
-      currency: 'GHS',
-      familyNotes: req.familyNotes,
-      reviewed: false,
-    };
-    return mockBooking;
-  }
-
-  // Real agency — call backend
   try {
-    const res = await apiClient.post<ApiBooking>('/bookings', req);
-    return res.data;
+    const res = await apiClient.post<{ data: ApiBooking }>('/bookings', req);
+    return (res.data as any)?.data ?? res.data;
   } catch (e: any) {
-    // If backend isn't ready yet, return a mock booking so the flow continues
     const msg = e?.response?.data?.message ?? e?.message ?? '';
     throw new Error(msg || 'Failed to create booking');
   }
 }
 
 export async function cancelBooking(id: string): Promise<void> {
-  if (id.startsWith('mock-')) return; // no-op for mock bookings
-  await apiClient.patch(`/bookings/${id}/cancel`, { reason: 'Cancelled by user' });
+  await apiClient.post(`/bookings/${id}/cancel`, { reason: 'Cancelled by user' });
+}
+
+export async function getBookingsByAgency(agencyId: string): Promise<ApiBooking[]> {
+  try {
+    const res = await apiClient.get(`/bookings/agency/${agencyId}`);
+    const raw = res.data;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw?.data)) return raw.data;
+    if (Array.isArray(raw?.page?.data)) return raw.page.data;
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export async function assignWorkerToBooking(bookingId: string, workerId: string): Promise<ApiBooking> {
+  const res = await apiClient.patch<{ data: ApiBooking }>(`/bookings/${bookingId}/assign-worker`, { workerId });
+  return (res.data as any)?.data ?? res.data;
+}
+
+export async function setBookingPrice(bookingId: string, amountMinorUnits: number): Promise<void> {
+  await apiClient.patch(`/bookings/${bookingId}/price`, { hourlyRateMinorUnits: amountMinorUnits });
 }
 
 export async function initiatePayment(bookingId: string): Promise<PaymentInitResponse> {
-  if (bookingId.startsWith('mock-')) {
-    // Return mock payment info for demo
-    return {
-      paystackReference: `CN-DEMO-${Date.now()}`,
-      authorizationUrl: 'https://checkout.paystack.com/demo',
-      amount: 50000,
-      currency: 'GHS',
-    };
-  }
-  try {
-    const res = await apiClient.post<PaymentInitResponse>(`/bookings/${bookingId}/payment`);
-    return res.data;
-  } catch {
-    // Paystack not configured — return demo data
-    return {
-      paystackReference: `CN-DEMO-${Date.now()}`,
-      authorizationUrl: 'https://checkout.paystack.com/demo',
-      amount: 50000,
-      currency: 'GHS',
-    };
-  }
+  const res = await apiClient.post<PaymentInitResponse>('/payments/initiate', { bookingId });
+  const raw = res.data as any;
+  return raw?.data ?? raw;
+}
+
+export async function getServiceCategories(): Promise<ApiServiceCategory[]> {
+  const res = await apiClient.get('/service-categories');
+  const raw = res.data;
+  if (Array.isArray(raw?.data)) return raw.data;
+  if (Array.isArray(raw)) return raw;
+  return [];
+}
+
+export async function getFamilyAddresses(): Promise<ApiFamilyAddress[]> {
+  const res = await apiClient.get('/family/me/addresses');
+  const raw = res.data;
+  // Swagger example shows a bare array (no `data` wrapper) for this endpoint
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.data)) return raw.data;
+  return [];
+}
+
+export async function addFamilyAddress(
+   payload: { label: string; line1: string; line2?: string; city: string; region: string; latitude: number; longitude: number; default: boolean }
+): Promise<ApiFamilyAddress> {
+  const res = await apiClient.post('/family/me/addresses', payload);
+  const raw = res.data;
+  return (raw as any)?.data ?? raw;
 }

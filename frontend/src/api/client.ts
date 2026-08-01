@@ -36,7 +36,7 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Response interceptor — handle 401 and add retry on network errors
+// Response interceptor — handle auth failures and add retry on network errors
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -50,7 +50,11 @@ apiClient.interceptors.response.use(
       return apiClient(config);
     }
 
-    if (error.response?.status === 401) {
+    // FIX: previously only handled 401. Your backend appears to return 403
+    // for invalid/expired/missing tokens too, so those auth failures were
+    // never triggering a logout/redirect — the app just kept resending the
+    // stale token and looping on the "Request failed / Retry" screen.
+    if (error.response?.status === 401 || error.response?.status === 403) {
       await AsyncStorage.multiRemove(['token', 'user']);
       navigationRef?.navigate('Login');
     }

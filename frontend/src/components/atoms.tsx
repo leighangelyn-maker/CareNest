@@ -268,14 +268,15 @@ export function BookingsIcon({ color }: { color: string }) {
   );
 }
 
-export function MessagesIcon({ color }: { color: string }) {
+export function NotificationsIcon({ color }: { color: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
       <Path
-        d="M21 11.5a8.4 8.4 0 01-8.9 8.4 8.7 8.7 0 01-3-.5L3 21l1.7-4a8.4 8.4 0 01-.7-3.5A8.4 8.4 0 0112.9 5a8.5 8.5 0 018.1 6.5z"
+        d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      <Path d="M13.7 21a2 2 0 01-3.4 0" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }

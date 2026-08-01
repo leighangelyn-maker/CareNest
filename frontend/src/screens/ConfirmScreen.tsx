@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, BookingStatus } from '../types';
+import { RootStackParamList, BookingStatus, ApiServiceCategory } from '../types';
 import { useBookings } from '../BookingContext';
+import { getServiceCategories } from '../api/bookings';
 import { Btn, CheckIcon, Divider, ProgressBar, Row, ScreenTitle, Sub } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
@@ -39,9 +40,24 @@ function formatDate(iso: string): string {
 }
 
 export default function ConfirmScreen({ navigation, route }: Props) {
-  const { booking } = route.params;
+  const { booking, agency } = route.params;
+  console.log('BOOKING.familyId from server:', booking.familyId);
   const { addBooking } = useBookings();
   const shortRef = booking.id.slice(0, 8) + '…';
+
+  const [categoryName, setCategoryName] = useState<string>('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats: ApiServiceCategory[] = await getServiceCategories();
+        const match = cats.find(c => c.id === booking.serviceCategoryId);
+        setCategoryName(match?.name ?? 'Service');
+      } catch {
+        setCategoryName('Service');
+      }
+    })();
+  }, [booking.serviceCategoryId]);
 
   // Add booking to context immediately so BookingsScreen shows it
   useEffect(() => {
@@ -59,7 +75,7 @@ export default function ConfirmScreen({ navigation, route }: Props) {
         <View style={styles.seal}><CheckIcon /></View>
         <ScreenTitle size={18}>You're booked!</ScreenTitle>
         <Sub style={{ textAlign: 'center', marginTop: 4 }}>
-          {booking.agency.name} · {booking.category}
+          {agency.name} · {categoryName}
         </Sub>
         <View style={{ marginTop: 14, width: '100%' }}>
           <Divider dashed />

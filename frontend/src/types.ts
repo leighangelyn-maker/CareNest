@@ -1,6 +1,7 @@
 // ─── Agency Types ─────────────────────────────────────────────────────────────
 
 export interface AgencySummary {
+  description: string;
   id: string;           // UUID
   name: string;
   slug: string;
@@ -16,6 +17,55 @@ export interface AgencyProfile extends AgencySummary {
   categories: string[];
 }
 
+// ─── Service Category Types ────────────────────────────────────────────────────
+
+export interface ApiServiceCategory {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+}
+
+// ─── Family Address Types ──────────────────────────────────────────────────────
+
+export interface ApiFamilyAddress {
+  id: string;
+  label: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  region: string;
+  latitude: number;
+  longitude: number;
+  default: boolean;
+}
+
+// ─── Agency Worker Types ────────────────────────────────────────────────────
+export interface ApiAgencyWorker {
+  id: string;
+  agencyId: string;
+  agencyName: string;
+  agencyCity: string;
+  agencyRegion: string;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  serviceCategoryId: string;
+  serviceCategoryName: string;
+  defaultHourlyRateMinorUnits: number;
+  status: string; // e.g. "ACTIVE"
+  createdAt: string;
+  updatedAt: string;
+}
+export interface WorkerCreateRequest {
+  agencyId: string;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  serviceCategoryId: string;
+  defaultHourlyRateMinorUnits: number;
+}
+
 // ─── Booking Types ────────────────────────────────────────────────────────────
 
 export type BookingStatus =
@@ -25,30 +75,59 @@ export type BookingStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
+// Matches the real POST /bookings and GET /bookings/family/{familyId} response.
+// Note: the backend only returns bare IDs (agencyId, serviceCategoryId,
+// familyAddressId) — it does NOT return resolved names. Screens must use
+// EnrichedBooking (below) if they need to display an agency or category name.
 export interface ApiBooking {
-  id: string;           // UUID
+  id: string;
+  familyId: string;
+  agencyId: string;
+  workerId: string | null;
+  workerName: string | null;
+  serviceCategoryId: string;
+  familyAddressId: string;
   status: BookingStatus;
-  agency: { id: string; name: string };
-  category: string;
   startTime: string;    // ISO-8601
   endTime: string;      // ISO-8601
+  isRecurring: boolean;
+  recurrenceRule?: string;
+  hourlyRateMinorUnits: number;
+  priceOverridden: boolean;
   totalHours: number;
   subtotalMinorUnits: number;
+  platformFeePct: number;
   platformFeeMinorUnits: number;
-  currency: string;
+  agencyPayoutMinorUnits: number;
   familyNotes?: string;
-  reviewed?: boolean;   // client-side only
+  agencyNotes?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  reviewed?: boolean;   // client-side only, not from API
 }
 
 /** Legacy alias */
 export type Booking = ApiBooking;
 
+// Client-side view model — ApiBooking plus names resolved from lookups,
+// used anywhere a booking needs to be displayed (not sent back to the API).
+export interface EnrichedBooking extends ApiBooking {
+  agencyName: string;
+  categoryName: string;
+}
+
+// Matches the real POST /bookings request body.
 export interface BookingCreateRequest {
   agencyId: string;
-  categoryId: number;
+  serviceCategoryId: string;
+  familyAddressId: string;
   startTime: string;    // ISO-8601 UTC
   endTime: string;      // ISO-8601 UTC
   isRecurring: boolean;
+  recurrenceRule?: string;
+  hourlyRateMinorUnits?: number;
   familyNotes?: string;
 }
 
@@ -59,25 +138,16 @@ export interface PaymentInitResponse {
   currency: string;
 }
 
-// ─── Message / Conversation Types ─────────────────────────────────────────────
+// ─── Notification Types ────────────────────────────────────────────────────────
 
-export interface ApiConversation {
-  id: string;           // conversationId UUID
-  bookingId: string;
-  otherPartyName: string;
-  lastMessage: string;
-  lastMessageAt: string;
-  unreadCount: number;
-}
-
-export interface ApiMessage {
-  id: string;           // UUID
-  conversationId: string;
-  senderId: string;     // UUID
-  senderName: string;
-  content: string;      // message text (was "body" in old schema)
-  sentAt: string;       // ISO-8601
-  status?: 'sent' | 'delivered' | 'read';
+export interface ApiNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  bookingId?: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 // ─── Legacy Worker Types (kept for backward compat with unused screens) ────────
@@ -111,19 +181,17 @@ export type RootStackParamList = {
   Login: undefined;
   EmailVerified: { token: string };
   MainTabs: undefined;
-  // Agency-centric screens (new)
   AgencyProfile: { agency: AgencySummary };
   BookAgency: { agency: AgencySummary };
-  // Legacy worker screen
   Profile: { worker: ApiWorker };
-  // Booking flow
   Pay: { booking: ApiBooking; agency: AgencySummary };
-  Confirm: { booking: ApiBooking };
+  Confirm:{ booking: ApiBooking; agency: AgencySummary };
   BookingDetail: { bookingId: string };
+  AgencyBookingDetail: { bookingId: string };
+  AddWorker: undefined;
   Review: { bookingId: string };
-  // Messages — now keyed by conversationId
-  Messages: { conversationId: string };
-  // Other
+  Notifications: undefined;
+  AddAddress: undefined;
   Subscription: undefined;
   WorkerProfileSetup: undefined;
 };
@@ -131,6 +199,6 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Bookings: undefined;
-  MessagesTab: undefined;
+  NotificationsTab: undefined;
   Account: undefined;
 };

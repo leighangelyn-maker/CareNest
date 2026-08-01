@@ -3,20 +3,23 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from '../types';
 import { useAuth } from '../AuthContext';
+import { useUnreadNotifications } from '../hooks/useUnreadNotifications';
 
 // Family screens
 import HomeScreen from '../screens/HomeScreen';
 import BookingsScreen from '../screens/BookingsScreen';
-import MessagesListScreen from '../screens/MessagesListScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 import AccountScreen from '../screens/AccountScreen';
 
 // Agency screens
 import AgencyDashboardScreen from '../screens/AgencyDashboardScreen';
+import AgencyBookingsScreen from '../screens/AgencyBookingsScreen';
+import AgencyProfileScreen from '../screens/AgencyProfileScreen';
 
 import {
   HomeIcon,
   BookingsIcon,
-  MessagesIcon,
+  NotificationsIcon,
   AccountIcon,
 } from '../components/atoms';
 import { Colors, Fonts } from '../theme';
@@ -26,6 +29,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export default function MainTabs() {
   const insets = useSafeAreaInsets();
   const { role } = useAuth();
+  const { count: unreadCount } = useUnreadNotifications();
   const isAgency = role === 'AGENCY_ADMIN';
   const tabBarHeight = 52 + insets.bottom;
 
@@ -52,7 +56,7 @@ export default function MainTabs() {
           letterSpacing: 0.2,
           marginBottom: 2,
         },
-        tabBarActiveTintColor: Colors.navy,
+        tabBarActiveTintColor: isAgency ? Colors.success : Colors.navy,
         tabBarInactiveTintColor: Colors.slateSoft,
         tabBarShowLabel: true,
         tabBarIconStyle: { marginTop: 2 },
@@ -83,25 +87,26 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="Bookings"
-        component={BookingsScreen}
+        component={isAgency ? AgencyBookingsScreen : BookingsScreen}
         options={{
           tabBarLabel: 'Bookings',
           tabBarIcon: ({ color }) => <BookingsIcon color={color} />,
         }}
       />
       <Tab.Screen
-        name="MessagesTab"
-        component={MessagesListScreen}
+        name="NotificationsTab"
+        component={NotificationsScreen}
         options={{
-          tabBarLabel: 'Messages',
-          tabBarIcon: ({ color }) => <MessagesIcon color={color} />,
+          tabBarLabel: 'Notifications',
+          tabBarIcon: ({ color }) => <NotificationsIcon color={color} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
       <Tab.Screen
         name="Account"
-        component={AccountScreen}
+        component={isAgency ? (AgencyProfileScreen as any) : AccountScreen}
         options={{
-          tabBarLabel: 'Account',
+          tabBarLabel: isAgency ? 'Profile' : 'Account',
           tabBarIcon: ({ color }) => <AccountIcon color={color} />,
         }}
       />

@@ -3,17 +3,19 @@ import {
   ScrollView,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import * as WebBrowser from 'expo-web-browser';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, PaymentInitResponse } from '../types';
-import { initiatePayment } from '../api/bookings';
+import { RootStackParamList, PaymentInitResponse, ApiServiceCategory } from '../types';
+import { initiatePayment, setBookingPrice, getBooking, getServiceCategories } from '../api/bookings';
 import {
   BackBtn,
   Btn,
@@ -22,22 +24,69 @@ import {
   Row,
   ScreenTitle,
   Sub,
+  inputStyle,
 } from '../components/atoms';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Pay'>;
 
 export default function PayScreen({ navigation, route }: Props) {
-  const { booking, agency } = route.params;
+  const { agency } = route.params;
+  const [booking, setBooking] = useState(route.params.booking);
+
+  const [categoryName, setCategoryName] = useState<string>('');
+
+  // Rate-setting step (runs before payment if no price is set yet)
+  const [rateInput, setRateInput] = useState('');
+  const [settingPrice, setSettingPrice] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   const [paymentInfo, setPaymentInfo] = useState<PaymentInitResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentOpened, setPaymentOpened] = useState(false);
-  const [confirming, setConfirming] = useState(false);
 
-  useEffect(() => { initPayment(); }, []);
+  const priceIsSet = booking.hourlyRateMinorUnits > 0;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats: ApiServiceCategory[] = await getServiceCategories();
+        const match = cats.find(c => c.id === booking.serviceCategoryId);
+        setCategoryName(match?.name ?? 'Service');
+      } catch {
+        setCategoryName('Service');
+      }
+    })();
+  }, [booking.serviceCategoryId]);
+
+  useEffect(() => {
+    if (priceIsSet) initPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceIsSet]);
+
+  async function handleSetPrice() {
+    Keyboard.dismiss();
+    const ghs = parseFloat(rateInput);
+    if (isNaN(ghs) || ghs <= 0) {
+      setPriceError('Enter the hourly rate you agreed with the agency.');
+      return;
+    }
+    setSettingPrice(true);
+    setPriceError(null);
+    try {
+      const amountMinorUnits = Math.round(ghs * 100);
+      await setBookingPrice(booking.id, amountMinorUnits);
+      const refreshed = await getBooking(booking.id);
+      setBooking(refreshed);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? e?.message ?? 'Failed to save the agreed rate.';
+      setPriceError(msg);
+    } finally {
+      setSettingPrice(false);
+    }
+  }
 
   async function initPayment() {
     setLoading(true);
@@ -59,11 +108,15 @@ export default function PayScreen({ navigation, route }: Props) {
 
   async function handleOpenPayment() {
     if (!paymentInfo?.authorizationUrl) return;
-    setPaymentOpened(true);
-    await WebBrowser.openBrowserAsync(paymentInfo.authorizationUrl, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-      controlsColor: Colors.navy,
-    });
+    try {
+      await WebBrowser.openBrowserAsync(paymentInfo.authorizationUrl, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+        controlsColor: Colors.navy,
+      });
+      setPaymentOpened(true);
+    } catch (e: any) {
+      Alert.alert('Could not open payment page', e?.message ?? 'Unknown error opening the browser.');
+    }
   }
 
   async function handleCopyLink() {
@@ -87,7 +140,6 @@ export default function PayScreen({ navigation, route }: Props) {
       return;
     }
 
-    // Confirm the user has paid
     Alert.alert(
       'Confirm payment',
       'Have you completed the payment on Paystack?',
@@ -95,7 +147,7 @@ export default function PayScreen({ navigation, route }: Props) {
         {
           text: 'Yes, I have paid',
           style: 'default',
-          onPress: () => navigation.navigate('Confirm', { booking }),
+          onPress: () => navigation.navigate('Confirm', { booking, agency }),
         },
         {
           text: 'Not yet — go back to pay',
@@ -119,9 +171,9 @@ export default function PayScreen({ navigation, route }: Props) {
     } catch { return iso; }
   }
 
-  const subtotal  = booking.subtotalMinorUnits ?? 0;
-  const fee       = Math.round(subtotal * 0.07);
-  const total     = subtotal + fee;
+  const subtotal = booking.subtotalMinorUnits ?? 0;
+  const fee      = Math.round(subtotal * 0.07);
+  const total    = subtotal + fee;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.paper }}>
@@ -135,29 +187,64 @@ export default function PayScreen({ navigation, route }: Props) {
         <View style={styles.summaryCard}>
           <Row label="Agency"   value={agency.name} />
           <Divider />
-          <Row label="Service"  value={booking.category} />
+          <Row label="Service"  value={categoryName || '—'} />
           <Divider />
           <Row label="Start"    value={formatDate(booking.startTime)} />
           <Divider />
           <Row label="End"      value={formatDate(booking.endTime)} />
-          <Divider />
-          <Row label="Subtotal" value={formatGhs(subtotal)} />
-          <Row label="CareNest fee (7%)" value={formatGhs(fee)} />
-          <Divider />
-          <Row
-            label="Total"
-            value={formatGhs(total)}
-            valueStyle={{ fontFamily: Fonts.interBold, fontSize: 15 }}
-          />
-          <View style={styles.agencyNote}>
-            <Text style={styles.agencyNoteText}>
-              Agency receives {formatGhs(Math.round(subtotal * 0.93))} after platform fee
-            </Text>
-          </View>
+          {priceIsSet && (
+            <>
+              <Divider />
+              <Row label="Subtotal" value={formatGhs(subtotal)} />
+              <Row label="CareNest fee (7%)" value={formatGhs(fee)} />
+              <Divider />
+              <Row
+                label="Total"
+                value={formatGhs(total)}
+                valueStyle={{ fontFamily: Fonts.interBold, fontSize: 15 }}
+              />
+              <View style={styles.agencyNote}>
+                <Text style={styles.agencyNoteText}>
+                  Agency receives {formatGhs(Math.round(subtotal * 0.93))} after platform fee
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
-        {/* Payment section */}
-        {loading ? (
+        {/* Step 1: agree on a rate before payment can be initiated */}
+        {!priceIsSet ? (
+          <View style={styles.rateCard}>
+            <Text style={styles.rateTitle}>Set the agreed rate</Text>
+            <Text style={styles.rateBody}>
+              Call {agency.name} to agree on an hourly rate for this booking, then enter it below to continue to payment.
+            </Text>
+            <Text style={styles.rateLabel}>Hourly rate (GHS)</Text>
+            <TextInput
+              style={[inputStyle, priceError && styles.inputError]}
+              value={rateInput}
+              onChangeText={(v) => { setRateInput(v.replace(/[^0-9.]/g, '')); setPriceError(null); }}
+              placeholder="e.g. 25.00"
+              placeholderTextColor={Colors.slateSoft}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+              onSubmitEditing={handleSetPrice}
+            />
+            {priceError ? <Text style={styles.fieldError}>{priceError}</Text> : null}
+            <TouchableOpacity
+              onPress={handleSetPrice}
+              disabled={settingPrice}
+              style={[styles.setPriceBtn, settingPrice && { opacity: 0.7 }]}
+              activeOpacity={0.85}
+            >
+              {settingPrice ? (
+                <ActivityIndicator color={Colors.goldLight} />
+              ) : (
+                <Text style={styles.setPriceBtnText}>Save rate & continue</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={Colors.navy} />
             <Text style={styles.loadingText}>Generating payment link…</Text>
@@ -171,13 +258,11 @@ export default function PayScreen({ navigation, route }: Props) {
           </View>
         ) : paymentInfo ? (
           <>
-            {/* Reference */}
             <View style={styles.refBox}>
               <Text style={styles.refLabel}>Paystack reference</Text>
               <Text style={styles.refValue}>{paymentInfo.paystackReference}</Text>
             </View>
 
-            {/* Open in browser — primary action */}
             <TouchableOpacity
               onPress={handleOpenPayment}
               style={styles.payBtn}
@@ -190,7 +275,6 @@ export default function PayScreen({ navigation, route }: Props) {
               </Text>
             </TouchableOpacity>
 
-            {/* Fallback: copy link */}
             <TouchableOpacity
               onPress={handleCopyLink}
               style={[styles.copyBtn, copied && styles.copyBtnDone]}
@@ -203,7 +287,6 @@ export default function PayScreen({ navigation, route }: Props) {
               </Text>
             </TouchableOpacity>
 
-            {/* Status indicator */}
             {paymentOpened ? (
               <View style={styles.paidHint}>
                 <Text style={styles.paidHintText}>
@@ -220,12 +303,14 @@ export default function PayScreen({ navigation, route }: Props) {
           </>
         ) : null}
 
-        {/* Continue CTA */}
-        <View style={styles.ctaRow}>
-          <Btn onPress={handleContinue}>
-            {paymentOpened ? 'I have paid — Continue →' : 'Continue to confirmation →'}
-          </Btn>
-        </View>
+        {/* Continue CTA — only relevant once a payment link exists */}
+        {priceIsSet && paymentInfo && (
+          <View style={styles.ctaRow}>
+            <Btn onPress={handleContinue}>
+              {paymentOpened ? 'I have paid — Continue →' : 'Continue to confirmation →'}
+            </Btn>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -251,6 +336,23 @@ const styles = StyleSheet.create({
   agencyNoteText: {
     fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slate, textAlign: 'center',
   },
+
+  // Rate-entry card
+  rateCard: {
+    borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 14,
+    padding: 16, marginBottom: 16, backgroundColor: Colors.navyPale,
+  },
+  rateTitle: { fontFamily: Fonts.interBold, fontSize: 15, color: Colors.navy, marginBottom: 6 },
+  rateBody: { fontFamily: Fonts.inter, fontSize: 12.5, color: Colors.slate, lineHeight: 19, marginBottom: 14 },
+  rateLabel: { fontFamily: Fonts.interSemiBold, fontSize: 12, color: Colors.navy, marginBottom: 6 },
+  inputError: { borderColor: Colors.danger, borderWidth: 1.5 },
+  fieldError: { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.danger, marginTop: 4 },
+  setPriceBtn: {
+    marginTop: 14, backgroundColor: Colors.navy, borderRadius: 10,
+    paddingVertical: 13, alignItems: 'center',
+  },
+  setPriceBtnText: { fontFamily: Fonts.interSemiBold, fontSize: 14, color: Colors.goldLight },
+
   loadingBox: { paddingVertical: 32, alignItems: 'center', gap: 12 },
   loadingText: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.slate },
   errorBox: { paddingVertical: 16, alignItems: 'center', gap: 10 },
@@ -272,7 +374,6 @@ const styles = StyleSheet.create({
   },
   refValue: { fontFamily: Fonts.spaceMonoBold, fontSize: 13, color: Colors.navy },
 
-  // Primary pay button
   payBtn: {
     backgroundColor: Colors.navy, borderRadius: 12,
     paddingVertical: 16, alignItems: 'center', marginBottom: 10,
@@ -281,7 +382,6 @@ const styles = StyleSheet.create({
   },
   payBtnText: { fontFamily: Fonts.interBold, fontSize: 15, color: Colors.goldLight },
 
-  // Copy link fallback
   copyBtn: {
     borderWidth: 1.5, borderColor: Colors.line, borderStyle: 'dashed',
     borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginBottom: 14,
@@ -289,7 +389,6 @@ const styles = StyleSheet.create({
   copyBtnDone: { borderColor: Colors.success, borderStyle: 'solid' },
   copyBtnText: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.slate },
 
-  // Hints
   note: {
     backgroundColor: Colors.navySubtle, borderRadius: 10, padding: 12, marginBottom: 14,
     borderWidth: 1, borderColor: Colors.line,

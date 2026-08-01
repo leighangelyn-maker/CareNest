@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -16,8 +16,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
-import { createBooking } from '../api/bookings';
+import { useFocusEffect } from '@react-navigation/native';
+import { RootStackParamList, ApiServiceCategory, ApiFamilyAddress } from '../types';
+import { createBooking, getServiceCategories, getFamilyAddresses } from '../api/bookings';
 import {
   BackBtn,
   Btn,
@@ -93,15 +94,61 @@ export default function BookScreen({ navigation, route }: Props) {
 
   // Picker visibility
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [category, setCategory] = useState('');
+
+  // Service category
+  const [categories, setCategories] = useState<ApiServiceCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  // Family address
+  const [addresses, setAddresses] = useState<ApiFamilyAddress[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ─── Load categories ──────────────────────────────────────────────────────
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats = await getServiceCategories();
+        setCategories(cats);
+      } catch {
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    })();
+  }, []);
+
+  // ─── Load addresses — refetches every time this screen gains focus, so
+  // returning from AddAddressScreen shows the new address immediately ──────
+
+  const loadAddresses = useCallback(async () => {
+    try {
+      const addrs = await getFamilyAddresses();
+      setAddresses(addrs);
+      const def = addrs.find(a => a.default) ?? addrs[0];
+      if (def) setSelectedAddressId(prev => prev ?? def.id);
+    } catch {
+      setAddresses([]);
+    } finally {
+      setAddressesLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAddresses();
+    }, [loadAddresses])
+  );
+
   // ─── Date picker handlers ────────────────────────────────────────────────
 
   function onDateChange(_: DateTimePickerEvent, date?: Date) {
-    // On Android the picker closes itself; on iOS we close on confirm
     if (Platform.OS === 'android') setShowDatePicker(false);
     if (date) {
       setSelectedDate(date);
@@ -126,7 +173,6 @@ export default function BookScreen({ navigation, route }: Props) {
   }
 
   function handleDurationTextChange(text: string) {
-    // Allow only digits while the user is typing
     const cleaned = text.replace(/\D/g, '');
     setDurationText(cleaned);
     const parsed = parseInt(cleaned, 10);
@@ -136,7 +182,6 @@ export default function BookScreen({ navigation, route }: Props) {
   }
 
   function handleDurationBlur() {
-    // Finalise / clamp on blur
     const parsed = parseInt(durationText, 10);
     if (isNaN(parsed) || parsed < MIN_DURATION) {
       applyDuration(MIN_DURATION);
@@ -150,7 +195,8 @@ export default function BookScreen({ navigation, route }: Props) {
 
   function validate(): boolean {
     const e: Record<string, string> = {};
-    if (!category.trim()) e.category = 'Please enter the service you need.';
+    if (!selectedCategoryId) e.category = 'Please select a service.';
+    if (!selectedAddressId) e.address = 'Please select an address.';
 
     const now = new Date();
     const startDateTime = new Date(selectedDate);
@@ -174,11 +220,12 @@ export default function BookScreen({ navigation, route }: Props) {
 
       const booking = await createBooking({
         agencyId: agency.id,
-        categoryId: 1,
+        serviceCategoryId: selectedCategoryId!,
+        familyAddressId: selectedAddressId!,
         startTime: startIso,
         endTime: endIso,
         isRecurring: false,
-        familyNotes: category.trim() + (notes.trim() ? ` — ${notes.trim()}` : ''),
+        familyNotes: notes.trim() || undefined,
       });
 
       navigation.navigate('Pay', { booking, agency });
@@ -194,7 +241,6 @@ export default function BookScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Dismiss keyboard when tapping outside inputs */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           style={styles.flex}
@@ -215,21 +261,88 @@ export default function BookScreen({ navigation, route }: Props) {
 
             {/* ── Service needed ────────────────────────────────────────── */}
             <Field label="Service needed *">
-              <TextInput
-                style={[inputStyle, errors.category && styles.inputError]}
-                value={category}
-                onChangeText={(v) => {
-                  setCategory(v);
-                  setErrors(p => ({ ...p, category: '' }));
-                }}
-                placeholder="e.g. Nanny, Cleaner, Caregiver"
-                placeholderTextColor={Colors.slateSoft}
-                autoCapitalize="words"
-                returnKeyType="done"
-                onSubmitEditing={Keyboard.dismiss}
-              />
+              {categoriesLoading ? (
+                <ActivityIndicator size="small" color={Colors.navy} />
+              ) : categories.length === 0 ? (
+                <Text style={styles.emptyHint}>No service categories available right now.</Text>
+              ) : (
+                <View style={styles.chipWrap}>
+                  {categories.map((cat) => {
+                    const selected = cat.id === selectedCategoryId;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => {
+                          setSelectedCategoryId(cat.id);
+                          setErrors(p => ({ ...p, category: '' }));
+                        }}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
               {errors.category ? (
                 <Text style={styles.fieldError}>{errors.category}</Text>
+              ) : null}
+            </Field>
+
+            {/* ── Address ───────────────────────────────────────────────── */}
+            <Field label="Service address *">
+              {addressesLoading ? (
+                <ActivityIndicator size="small" color={Colors.navy} />
+              ) : addresses.length === 0 ? (
+                <View>
+                  <Text style={styles.emptyHint}>
+                    No saved address found.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.addAddressBtn}
+                    onPress={() => navigation.navigate('AddAddress')}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.addAddressBtnText}>+ Add an address</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  {addresses.map((addr) => {
+                    const selected = addr.id === selectedAddressId;
+                    return (
+                      <TouchableOpacity
+                        key={addr.id}
+                        style={[styles.addressCard, selected && styles.addressCardSelected]}
+                        onPress={() => {
+                          setSelectedAddressId(addr.id);
+                          setErrors(p => ({ ...p, address: '' }));
+                        }}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.addressLabel, selected && styles.addressLabelSelected]}>
+                          {addr.label || 'Address'}{addr.default ? '  ·  Default' : ''}
+                        </Text>
+                        <Text style={styles.addressLine}>
+                          {addr.line1}{addr.city ? `, ${addr.city}` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity
+                    style={styles.addAddressBtnSecondary}
+                    onPress={() => navigation.navigate('AddAddress')}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.addAddressBtnSecondaryText}>+ Add another address</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {errors.address ? (
+                <Text style={styles.fieldError}>{errors.address}</Text>
               ) : null}
             </Field>
 
@@ -330,7 +443,6 @@ export default function BookScreen({ navigation, route }: Props) {
             {/* ── Duration stepper ──────────────────────────────────────── */}
             <Field label={`Duration (hours)  ·  min ${MIN_DURATION} · max ${MAX_DURATION}`}>
               <View style={styles.stepperRow}>
-                {/* Minus */}
                 <TouchableOpacity
                   style={[
                     styles.stepperBtn,
@@ -345,7 +457,6 @@ export default function BookScreen({ navigation, route }: Props) {
                   <Text style={styles.stepperBtnText}>−</Text>
                 </TouchableOpacity>
 
-                {/* Manual text input */}
                 <TextInput
                   ref={durationInputRef}
                   style={styles.stepperInput}
@@ -359,7 +470,6 @@ export default function BookScreen({ navigation, route }: Props) {
                   onSubmitEditing={handleDurationBlur}
                 />
 
-                {/* Plus */}
                 <TouchableOpacity
                   style={[
                     styles.stepperBtn,
@@ -416,36 +526,102 @@ export default function BookScreen({ navigation, route }: Props) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.paper,
-  },
-  flex: {
-    flex: 1,
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.paper },
+  flex: { flex: 1 },
   container: {
     paddingHorizontal: SCREEN_H_PADDING,
     paddingTop: 16,
     paddingBottom: 48,
   },
 
-  // ── Errors ────────────────────────────────────────────────────────────────
-  inputError: {
-    borderColor: Colors.danger,
-    borderWidth: 1.5,
-  },
-  fieldError: {
-    fontFamily: Fonts.inter,
-    fontSize: 11.5,
-    color: Colors.danger,
-    marginTop: 4,
-  },
+  inputError: { borderColor: Colors.danger, borderWidth: 1.5 },
+  fieldError: { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.danger, marginTop: 4 },
   generalError: {
-    fontFamily: Fonts.inter,
+    fontFamily: Fonts.inter, fontSize: 13, color: Colors.danger,
+    marginBottom: 12, textAlign: 'center',
+  },
+  emptyHint: {
+    fontFamily: Fonts.inter, fontSize: 12.5, color: Colors.slate, lineHeight: 18,
+  },
+
+  // ── Add address prompts ──────────────────────────────────────────────────
+  addAddressBtn: {
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.navy,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  addAddressBtnText: {
+    fontFamily: Fonts.interSemiBold,
     fontSize: 13,
-    color: Colors.danger,
-    marginBottom: 12,
-    textAlign: 'center',
+    color: Colors.navy,
+  },
+  addAddressBtnSecondary: {
+    borderWidth: 1.5,
+    borderColor: Colors.line,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  addAddressBtnSecondaryText: {
+    fontFamily: Fonts.interSemiBold,
+    fontSize: 12.5,
+    color: Colors.slate,
+  },
+
+  // ── Category chips ───────────────────────────────────────────────────────
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 100,
+    borderWidth: 1.5,
+    borderColor: Colors.line,
+    backgroundColor: Colors.navyPale,
+  },
+  chipSelected: {
+    backgroundColor: Colors.navy,
+    borderColor: Colors.navy,
+  },
+  chipText: {
+    fontFamily: Fonts.interSemiBold,
+    fontSize: 12.5,
+    color: Colors.navy,
+  },
+  chipTextSelected: {
+    color: Colors.goldLight,
+  },
+
+  // ── Address cards ────────────────────────────────────────────────────────
+  addressCard: {
+    borderWidth: 1.5,
+    borderColor: Colors.line,
+    borderRadius: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    backgroundColor: Colors.paper,
+  },
+  addressCardSelected: {
+    borderColor: Colors.navy,
+    backgroundColor: Colors.navyPale,
+  },
+  addressLabel: {
+    fontFamily: Fonts.interSemiBold,
+    fontSize: 12.5,
+    color: Colors.slate,
+    marginBottom: 2,
+  },
+  addressLabelSelected: {
+    color: Colors.navy,
+  },
+  addressLine: {
+    fontFamily: Fonts.inter,
+    fontSize: 12.5,
+    color: Colors.slate,
   },
 
   // ── Picker trigger ────────────────────────────────────────────────────────
@@ -460,16 +636,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     backgroundColor: Colors.navyPale,
   },
-  pickerTriggerText: {
-    fontFamily: Fonts.inter,
-    fontSize: 13.5,
-    color: Colors.ink,
-  },
-  pickerIcon: {
-    fontSize: 16,
-  },
+  pickerTriggerText: { fontFamily: Fonts.inter, fontSize: 13.5, color: Colors.ink },
+  pickerIcon: { fontSize: 16 },
 
-  // ── Picker container ──────────────────────────────────────────────────────
   pickerWrapper: {
     marginTop: 6,
     borderRadius: 12,
@@ -485,68 +654,31 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.line,
   },
-  pickerDoneText: {
-    fontFamily: Fonts.interSemiBold,
-    fontSize: 14,
-    color: Colors.navy,
-  },
+  pickerDoneText: { fontFamily: Fonts.interSemiBold, fontSize: 14, color: Colors.navy },
 
   // ── Duration stepper ─────────────────────────────────────────────────────
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepperBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
+    width: 42, height: 42, borderRadius: 10,
     backgroundColor: Colors.navy,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  stepperBtnDisabled: {
-    backgroundColor: Colors.line,
-  },
-  stepperBtnText: {
-    fontFamily: Fonts.interBold,
-    fontSize: 20,
-    color: Colors.goldLight,
-    lineHeight: 24,
-  },
+  stepperBtnDisabled: { backgroundColor: Colors.line },
+  stepperBtnText: { fontFamily: Fonts.interBold, fontSize: 20, color: Colors.goldLight, lineHeight: 24 },
   stepperInput: {
-    width: 60,
-    height: 42,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: Colors.navy,
-    backgroundColor: Colors.paper,
-    textAlign: 'center',
-    fontFamily: Fonts.interBold,
-    fontSize: 17,
-    color: Colors.navy,
+    width: 60, height: 42, borderRadius: 10,
+    borderWidth: 1.5, borderColor: Colors.navy,
+    backgroundColor: Colors.paper, textAlign: 'center',
+    fontFamily: Fonts.interBold, fontSize: 17, color: Colors.navy,
   },
-  stepperLabel: {
-    fontFamily: Fonts.interSemiBold,
-    fontSize: 13,
-    color: Colors.slate,
-    marginLeft: 2,
-  },
+  stepperLabel: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.slate, marginLeft: 2 },
 
-  // ── Submit loading state ──────────────────────────────────────────────────
   loadingBtn: {
-    width: '100%',
-    backgroundColor: Colors.navy,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    opacity: 0.8,
+    width: '100%', backgroundColor: Colors.navy, borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', opacity: 0.8,
   },
   charCount: {
-    fontFamily: Fonts.inter,
-    fontSize: 11,
-    color: Colors.slateSoft,
-    textAlign: 'right',
-    marginTop: 4,
+    fontFamily: Fonts.inter, fontSize: 11, color: Colors.slateSoft,
+    textAlign: 'right', marginTop: 4,
   },
 });

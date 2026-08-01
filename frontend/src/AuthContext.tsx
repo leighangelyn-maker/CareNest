@@ -2,14 +2,17 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as apiLogin, register as apiRegister, RegisterParams, BackendAuthResponse } from './api/auth';
 import apiClient, { setNavigationRef } from './api/client';
+import { getFamilyProfile } from './api/family';
 
 interface AuthState {
   token: string | null;
-  id: string | null;           // UUID from user.id
+  id: string | null;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
   role: 'FAMILY' | 'AGENCY_ADMIN' | 'ADMIN' | null;
+  agencyId: string | null;
+  familyId: string | null;
   isLoading: boolean;
   subscriptionStatus: 'inactive' | 'active' | 'past_due' | 'cancelled' | null;
 }
@@ -22,11 +25,12 @@ interface StoredUser {
   lastName: string | null;
   email: string;
   role: string;
+  agencyId?: string | null;
+  familyId?: string | null;
   subscriptionStatus?: string;
 }
 
 interface AuthContextValue extends AuthState {
-  /** Computed display name: "firstName lastName" or whichever is available */
   name: string | null;
   login(email: string, password: string): Promise<void>;
   register(params: RegisterParams): Promise<void>;
@@ -45,7 +49,7 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue>({
   token: null, id: null, firstName: null, lastName: null,
-  name: null, email: null, role: null,
+  name: null, email: null, role: null, agencyId: null, familyId: null,
   isLoading: true, subscriptionStatus: null,
   login: async () => {}, register: async () => {},
   logout: async () => {}, refreshSession: async () => false,
@@ -62,6 +66,29 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
+// Decode JWT and extract agencyId — backend embeds it in the token payload
+function extractAgencyIdFromToken(token: string): string | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.agencyId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// familyId is NOT embedded in the JWT — it's a separate entity id from the
+// family profile record, distinct from the user/auth id. Must be fetched
+// from GET /family/me for FAMILY-role users.
+async function resolveFamilyId(role: string | undefined): Promise<string | null> {
+  if (role !== 'FAMILY') return null;
+  try {
+    const profile = await getFamilyProfile();
+    return profile.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function computeName(firstName: string | null, lastName: string | null): string | null {
   if (firstName && lastName) return `${firstName} ${lastName}`;
   return firstName ?? lastName ?? null;
@@ -70,7 +97,7 @@ function computeName(firstName: string | null, lastName: string | null): string 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     token: null, id: null, firstName: null, lastName: null,
-    email: null, role: null,
+    email: null, role: null, agencyId: null, familyId: null,
     isLoading: true, subscriptionStatus: null,
   });
 
@@ -83,6 +110,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const user: StoredUser = JSON.parse(userJson);
           const token = user.token;
           if (token && !isTokenExpired(token)) {
+            const agencyId = user.agencyId ?? extractAgencyIdFromToken(token);
+            if (agencyId) await AsyncStorage.setItem('agencyId', agencyId);
+
+            let familyId = user.familyId ?? null;
+            if (!familyId && user.role === 'FAMILY') {
+              familyId = await resolveFamilyId(user.role);
+              if (familyId) {
+                await AsyncStorage.setItem('familyId', familyId);
+                await AsyncStorage.setItem('user', JSON.stringify({ ...user, familyId }));
+              }
+            }
+
             setState({
               token,
               id: user.id ?? null,
@@ -90,6 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               lastName: user.lastName ?? null,
               email: user.email,
               role: user.role as AuthState['role'],
+              agencyId,
+              familyId,
               subscriptionStatus: (user.subscriptionStatus as AuthState['subscriptionStatus']) ?? null,
               isLoading: false,
             });
@@ -100,10 +141,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (refreshToken) {
             try {
               const res = await apiClient.post<any>('/auth/refresh', { refreshToken });
-              // Backend wraps in { data: { accessToken }, message }
               const newToken = res.data?.data?.accessToken ?? res.data?.accessToken;
-              const updated: StoredUser = { ...user, token: newToken };
+              const agencyId = user.agencyId ?? extractAgencyIdFromToken(newToken);
+              if (agencyId) await AsyncStorage.setItem('agencyId', agencyId);
+
+              let familyId = user.familyId ?? null;
+              if (!familyId && user.role === 'FAMILY') {
+                familyId = await resolveFamilyId(user.role);
+                if (familyId) await AsyncStorage.setItem('familyId', familyId);
+              }
+
+              const updated: StoredUser = { ...user, token: newToken, agencyId, familyId };
               await AsyncStorage.setItem('user', JSON.stringify(updated));
+              await AsyncStorage.setItem('token', newToken);
               setState({
                 token: newToken,
                 id: user.id ?? null,
@@ -111,6 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 lastName: user.lastName ?? null,
                 email: user.email,
                 role: user.role as AuthState['role'],
+                agencyId,
+                familyId,
                 subscriptionStatus: (user.subscriptionStatus as AuthState['subscriptionStatus']) ?? null,
                 isLoading: false,
               });
@@ -124,6 +176,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function persistAndSetState(res: BackendAuthResponse) {
+    const agencyId = extractAgencyIdFromToken(res.accessToken);
+    const familyId = await resolveFamilyId(res.user.role);
+
     const stored: StoredUser = {
       token: res.accessToken,
       refreshToken: res.refreshToken,
@@ -132,12 +187,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lastName: (res.user as any).lastName ?? null,
       email: res.user.email,
       role: res.user.role,
+      agencyId,
+      familyId,
     };
+
     await AsyncStorage.setItem('user', JSON.stringify(stored));
     await AsyncStorage.setItem('token', res.accessToken);
     if (res.refreshToken) {
       await AsyncStorage.setItem('refreshToken', res.refreshToken);
     }
+    if (agencyId) {
+      await AsyncStorage.setItem('agencyId', agencyId);
+    } else {
+      await AsyncStorage.removeItem('agencyId');
+    }
+    if (familyId) {
+      await AsyncStorage.setItem('familyId', familyId);
+    } else {
+      await AsyncStorage.removeItem('familyId');
+    }
+
     setState({
       token: res.accessToken,
       id: res.user.id,
@@ -145,6 +214,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lastName: (res.user as any).lastName ?? null,
       email: res.user.email,
       role: res.user.role as AuthState['role'],
+      agencyId,
+      familyId,
       subscriptionStatus: null,
       isLoading: false,
     });
@@ -157,7 +228,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function register(params: RegisterParams) {
     await apiRegister(params);
-    // After register: do NOT auto-login — show email verification pending screen
     await AsyncStorage.setItem('pendingEmail', params.email);
   }
 
@@ -171,10 +241,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await apiClient.post('/auth/logout', { refreshToken });
       }
     } catch {}
-    await AsyncStorage.multiRemove(['token', 'user', 'refreshToken', 'pendingEmail']);
+    await AsyncStorage.multiRemove(['token', 'user', 'refreshToken', 'pendingEmail', 'agencyId', 'familyId']);
     setState({
       token: null, id: null, firstName: null, lastName: null,
-      email: null, role: null, subscriptionStatus: null, isLoading: false,
+      email: null, role: null, agencyId: null, familyId: null,
+      subscriptionStatus: null, isLoading: false,
     });
     (setNavigationRef as any)?.navigate?.('Login');
   }
@@ -187,7 +258,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : await AsyncStorage.getItem('refreshToken');
       if (!refreshToken) return false;
       const res = await apiClient.post<any>('/auth/refresh', { refreshToken });
-      // Backend wraps in { data: { accessToken }, message }
       const newToken = res.data?.data?.accessToken ?? res.data?.accessToken;
       if (!newToken) return false;
       if (userJson) {
@@ -223,24 +293,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     location?: string;
     bio?: string;
   }) {
-    // Call backend — gracefully ignore 404/405 if endpoint not yet live
     try {
       await apiClient.patch('/users/me', patch);
     } catch (e: any) {
       const status = e?.response?.status;
-      // Only re-throw on non-404/405 to allow optimistic updates while backend is pending
       if (status && status !== 404 && status !== 405) throw e;
     }
-
-    // Update local state
     setState(s => ({
       ...s,
       firstName: patch.firstName ?? s.firstName,
       lastName:  patch.lastName  ?? s.lastName,
       email:     patch.email     ?? s.email,
     }));
-
-    // Persist to AsyncStorage
     const userJson = await AsyncStorage.getItem('user');
     if (userJson) {
       const user: StoredUser = JSON.parse(userJson);

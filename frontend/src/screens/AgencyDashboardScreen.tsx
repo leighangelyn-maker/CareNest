@@ -61,37 +61,15 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: 'Cancelled',
 };
 
-// Mock dashboard data for when API isn't ready
-const MOCK_STATS: DashStats = {
-  totalBookings: 24,
-  activeBookings: 3,
-  completedBookings: 19,
-  cancelledBookings: 2,
-  totalWorkers: 8,
-  pendingPayouts: 2,
-  totalRevenueMinorUnits: 345000,
+const ZERO_STATS: DashStats = {
+  totalBookings: 0,
+  activeBookings: 0,
+  completedBookings: 0,
+  cancelledBookings: 0,
+  totalWorkers: 0,
+  pendingPayouts: 0,
+  totalRevenueMinorUnits: 0,
 };
-
-const MOCK_BOOKINGS: AgencyBooking[] = [
-  {
-    id: 'ab-001', status: 'PENDING_ASSIGNMENT', category: 'Nanny',
-    startTime: new Date(Date.now() + 2 * 24 * 3600000).toISOString(),
-    endTime: new Date(Date.now() + 2 * 24 * 3600000 + 8 * 3600000).toISOString(),
-    familyNotes: 'Please arrive by 8am.', agencyPayoutMinorUnits: 23250,
-  },
-  {
-    id: 'ab-002', status: 'ASSIGNED', category: 'Cleaner',
-    startTime: new Date(Date.now() + 1 * 24 * 3600000).toISOString(),
-    endTime: new Date(Date.now() + 1 * 24 * 3600000 + 4 * 3600000).toISOString(),
-    agencyPayoutMinorUnits: 12540,
-  },
-  {
-    id: 'ab-003', status: 'COMPLETED', category: 'Cook',
-    startTime: new Date(Date.now() - 3 * 24 * 3600000).toISOString(),
-    endTime: new Date(Date.now() - 3 * 24 * 3600000 + 5 * 3600000).toISOString(),
-    agencyPayoutMinorUnits: 18600,
-  },
-];
 
 function formatGhs(minor: number) {
   return `GHS ${(minor / 100).toFixed(2)}`;
@@ -137,29 +115,28 @@ const statStyles = StyleSheet.create({
 export default function AgencyDashboardScreen({ navigation }: Props) {
   const { name, id: agencyId } = useAuth();
   const insets = useSafeAreaInsets();
-  const [stats, setStats] = useState<DashStats>(MOCK_STATS);
-  const [bookings, setBookings] = useState<AgencyBooking[]>(MOCK_BOOKINGS);
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<DashStats>(ZERO_STATS);
+  const [bookings, setBookings] = useState<AgencyBooking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'bookings' | 'revenue'>('bookings');
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      // Try agency dashboard endpoint
       const [dashRes, bookRes] = await Promise.allSettled([
         apiClient.get(`/agencies/${agencyId}/dashboard`),
         apiClient.get('/bookings'),
       ]);
       if (dashRes.status === 'fulfilled') {
-        setStats(dashRes.value.data?.data ?? dashRes.value.data ?? MOCK_STATS);
+        setStats(dashRes.value.data?.data ?? dashRes.value.data ?? ZERO_STATS);
       }
       if (bookRes.status === 'fulfilled') {
         const raw = bookRes.value.data;
         const arr = Array.isArray(raw) ? raw
           : Array.isArray(raw?.page?.data) ? raw.page.data
           : Array.isArray(raw?.data) ? raw.data : [];
-        if (arr.length > 0) setBookings(arr);
+        setBookings(arr);
       }
     } catch {}
     if (!silent) setLoading(false);
@@ -179,7 +156,6 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
       await apiClient.patch(`/bookings/${bookingId}/complete`);
       load(true);
     } catch {
-      // Update locally
       setBookings(prev =>
         prev.map(b => b.id === bookingId ? { ...b, status: 'COMPLETED' } : b)
       );
