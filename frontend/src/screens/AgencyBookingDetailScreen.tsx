@@ -41,9 +41,9 @@ function statusColor(status: BookingStatus): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('en-GB', {
+    return new Date(iso).toLocaleString('en-US', {
       weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit',
+      hour: 'numeric', minute: '2-digit', hour12: true,
     });
   } catch { return iso; }
 }
@@ -69,7 +69,6 @@ export default function AgencyBookingDetailScreen({ navigation, route }: Props) 
       const agencyId = await AsyncStorage.getItem('agencyId');
       if (agencyId) {
         const w = await getWorkersForAgency(agencyId);
-        // Only offer workers matching the booking's service category, if known
         const relevant = w.filter(
           worker => !b.serviceCategoryId || worker.serviceCategoryId === b.serviceCategoryId
         );

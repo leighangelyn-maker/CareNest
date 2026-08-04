@@ -32,16 +32,15 @@ function statusColor(status: BookingStatus): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('en-GB', {
+    return new Date(iso).toLocaleString('en-US', {
       weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit',
+      hour: 'numeric', minute: '2-digit', hour12: true,
     });
   } catch { return iso; }
 }
 
 export default function ConfirmScreen({ navigation, route }: Props) {
   const { booking, agency } = route.params;
-  console.log('BOOKING.familyId from server:', booking.familyId);
   const { addBooking } = useBookings();
   const shortRef = booking.id.slice(0, 8) + '…';
 
@@ -59,7 +58,6 @@ export default function ConfirmScreen({ navigation, route }: Props) {
     })();
   }, [booking.serviceCategoryId]);
 
-  // Add booking to context immediately so BookingsScreen shows it
   useEffect(() => {
     addBooking(booking);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -68,7 +66,6 @@ export default function ConfirmScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <ProgressBar current={3} total={3} />
 
-      {/* Ticket */}
       <View style={styles.ticket}>
         <View style={[styles.notch, styles.notchLeft]} />
         <View style={[styles.notch, styles.notchRight]} />

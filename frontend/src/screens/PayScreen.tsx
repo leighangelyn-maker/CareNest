@@ -36,7 +36,6 @@ export default function PayScreen({ navigation, route }: Props) {
 
   const [categoryName, setCategoryName] = useState<string>('');
 
-  // Rate-setting step (runs before payment if no price is set yet)
   const [rateInput, setRateInput] = useState('');
   const [settingPrice, setSettingPrice] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
@@ -164,9 +163,9 @@ export default function PayScreen({ navigation, route }: Props) {
 
   function formatDate(iso: string): string {
     try {
-      return new Date(iso).toLocaleString('en-GB', {
+      return new Date(iso).toLocaleString('en-US', {
         weekday: 'short', day: 'numeric', month: 'short',
-        hour: '2-digit', minute: '2-digit',
+        hour: 'numeric', minute: '2-digit', hour12: true,
       });
     } catch { return iso; }
   }
@@ -183,7 +182,6 @@ export default function PayScreen({ navigation, route }: Props) {
         <ScreenTitle>Secure payment</ScreenTitle>
         <Sub>Funds are held securely and released to the agency once your booking is confirmed.</Sub>
 
-        {/* Booking summary */}
         <View style={styles.summaryCard}>
           <Row label="Agency"   value={agency.name} />
           <Divider />
@@ -212,7 +210,6 @@ export default function PayScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Step 1: agree on a rate before payment can be initiated */}
         {!priceIsSet ? (
           <View style={styles.rateCard}>
             <Text style={styles.rateTitle}>Set the agreed rate</Text>
@@ -303,7 +300,6 @@ export default function PayScreen({ navigation, route }: Props) {
           </>
         ) : null}
 
-        {/* Continue CTA — only relevant once a payment link exists */}
         {priceIsSet && paymentInfo && (
           <View style={styles.ctaRow}>
             <Btn onPress={handleContinue}>
@@ -336,8 +332,6 @@ const styles = StyleSheet.create({
   agencyNoteText: {
     fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slate, textAlign: 'center',
   },
-
-  // Rate-entry card
   rateCard: {
     borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 14,
     padding: 16, marginBottom: 16, backgroundColor: Colors.navyPale,
@@ -352,7 +346,6 @@ const styles = StyleSheet.create({
     paddingVertical: 13, alignItems: 'center',
   },
   setPriceBtnText: { fontFamily: Fonts.interSemiBold, fontSize: 14, color: Colors.goldLight },
-
   loadingBox: { paddingVertical: 32, alignItems: 'center', gap: 12 },
   loadingText: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.slate },
   errorBox: { paddingVertical: 16, alignItems: 'center', gap: 10 },
@@ -373,7 +366,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', color: Colors.slateSoft, marginBottom: 4,
   },
   refValue: { fontFamily: Fonts.spaceMonoBold, fontSize: 13, color: Colors.navy },
-
   payBtn: {
     backgroundColor: Colors.navy, borderRadius: 12,
     paddingVertical: 16, alignItems: 'center', marginBottom: 10,
@@ -381,14 +373,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22, shadowRadius: 10, elevation: 5,
   },
   payBtnText: { fontFamily: Fonts.interBold, fontSize: 15, color: Colors.goldLight },
-
   copyBtn: {
     borderWidth: 1.5, borderColor: Colors.line, borderStyle: 'dashed',
     borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginBottom: 14,
   },
   copyBtnDone: { borderColor: Colors.success, borderStyle: 'solid' },
   copyBtnText: { fontFamily: Fonts.interSemiBold, fontSize: 13, color: Colors.slate },
-
   note: {
     backgroundColor: Colors.navySubtle, borderRadius: 10, padding: 12, marginBottom: 14,
     borderWidth: 1, borderColor: Colors.line,

@@ -35,9 +35,9 @@ function statusColor(status: BookingStatus): string {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('en-GB', {
+    return new Date(iso).toLocaleString('en-US', {
       weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit',
+      hour: 'numeric', minute: '2-digit', hour12: true,
     });
   } catch { return iso; }
 }
@@ -58,7 +58,6 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
   }, [bookingId]);
 
   async function loadBooking() {
-    // 1. Check context first (already enriched — covers newly created bookings)
     const fromContext = bookings.find(b => b.id === bookingId);
     if (fromContext) {
       setBooking(fromContext);
@@ -67,7 +66,6 @@ export default function BookingDetailScreen({ navigation, route }: Props) {
       if ((fromContext as any).agencyName && (fromContext as any).categoryName) return;
     }
 
-    // 2. Fetch from API (plain ApiBooking — needs name resolution)
     try {
       const data = fromContext ?? await getBooking(bookingId);
       setBooking(data);

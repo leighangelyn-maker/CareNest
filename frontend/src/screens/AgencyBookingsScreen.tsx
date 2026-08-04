@@ -59,6 +59,14 @@ export default function AgencyBookingsScreen({ navigation }: any) {
     return categories.find(c => c.id === serviceCategoryId)?.name ?? 'Service';
   }
 
+  function formatTime(iso: string): string {
+    try {
+      return new Date(iso).toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+    } catch { return ''; }
+  }
+
   const Header = () => (
     <View style={styles.header}>
       <Text style={styles.headerLabel}>AGENCY</Text>
@@ -118,11 +126,9 @@ export default function AgencyBookingsScreen({ navigation }: any) {
               </View>
 
               <Text style={styles.dateText}>
-                {new Date(item.startTime).toLocaleDateString('en-GB', {
+                {new Date(item.startTime).toLocaleDateString('en-US', {
                   day: 'numeric', month: 'short',
-                })}{' · '}{new Date(item.startTime).toLocaleTimeString([], {
-                  hour: '2-digit', minute: '2-digit',
-                })}{item.totalHours > 0 ? ` · ${item.totalHours} hrs` : ''}
+                })}{' · '}{formatTime(item.startTime)}{item.totalHours > 0 ? ` · ${item.totalHours} hrs` : ''}
               </Text>
 
               {item.status === 'PENDING_ASSIGNMENT' && (

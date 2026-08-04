@@ -46,9 +46,9 @@ function badgeStyle(status: BookingStatus) {
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('en-GB', {
+    return new Date(iso).toLocaleString('en-US', {
       weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit',
+      hour: 'numeric', minute: '2-digit', hour12: true,
     });
   } catch { return iso; }
 }
