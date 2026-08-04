@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 @Slf4j
 @RestController
@@ -65,10 +67,60 @@ public class AuthController {
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
+public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+    String html;
+    HttpStatus status;
+
+    try {
         authService.verifyEmail(token);
-        return ResponseEntity.ok(ApiResponse.success("Email verified successfully"));
+        html = renderVerificationPage(
+                "Email verified!",
+                "Your CareNest account is now active. You can close this page and log in from the app.",
+                true
+        );
+        status = HttpStatus.OK;
+    } catch (Exception ex) {
+        log.warn("Email verification failed for token {}: {}", token, ex.getMessage());
+        html = renderVerificationPage(
+                "Verification link invalid or expired",
+                "This link may have already been used, or it's expired. Please request a new verification email from the app.",
+                false
+        );
+        status = HttpStatus.BAD_REQUEST;
     }
+
+    return ResponseEntity.status(status)
+            .contentType(MediaType.TEXT_HTML)
+            .body(html);
+}
+
+private String renderVerificationPage(String heading, String message, boolean success) {
+    String accentColor = success ? "#16a34a" : "#dc2626";
+    String icon = success ? "&#10003;" : "&#10007;";
+
+    return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>CareNest</title>
+            </head>
+            <body style="margin:0;background:#faf7f0;font-family:-apple-system,Arial,sans-serif;
+                         display:flex;align-items:center;justify-content:center;min-height:100vh;">
+              <div style="max-width:400px;padding:32px;text-align:center;">
+                <div style="width:64px;height:64px;border-radius:32px;background:%s22;
+                            display:flex;align-items:center;justify-content:center;
+                            margin:0 auto 20px;font-size:28px;color:%s;">
+                  %s
+                </div>
+                <h2 style="color:#1e293b;margin:0 0 12px;">%s</h2>
+                <p style="color:#64748b;font-size:15px;line-height:1.6;margin:0;">%s</p>
+              </div>
+            </body>
+            </html>
+            """.formatted(accentColor, accentColor, icon, heading, message);
+}
 
     @PostMapping("/resend-verification")
     public ResponseEntity<ApiResponse<Void>> resendVerification(@RequestParam String email) {
