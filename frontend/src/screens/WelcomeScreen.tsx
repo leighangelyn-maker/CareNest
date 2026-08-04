@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   footer: {
+    alignSelf: 'stretch', 
     paddingHorizontal: SCREEN_H_PADDING,
     paddingTop: 16,
     paddingBottom: isSmall ? 24 : 36,
