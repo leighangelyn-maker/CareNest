@@ -22,7 +22,10 @@
               "host": "verify-email"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -31,7 +34,10 @@
       "@react-native-community/datetimepicker"
     ],
     "extra": {
-      "apiBaseUrl": "https://carenest-2k59.onrender.com"
+      "apiBaseUrl": "https://carenest-2k59.onrender.com",
+      "eas": {
+        "projectId": "2951bc20-1bb3-4686-aeeb-9d7da59456c5"
+      }
     }
   }
 }
