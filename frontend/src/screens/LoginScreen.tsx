@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   flex:         { flex: 1 },
   container:    { paddingHorizontal: SCREEN_H_PADDING, paddingTop: isSmallScreen ? 16 : 32, paddingBottom: 40 },
   header:       { alignItems: 'center', marginBottom: isSmallScreen ? 16 : 28 },
-  logo:         { width: isSmallScreen ? 180 : 220, height: isSmallScreen ? 120 : 150, marginBottom: isSmallScreen ? 8 : 14 },
+  logo:         { width: isSmallScreen ? 220 : 160, height: isSmallScreen ? 160 : 190, marginBottom: isSmallScreen ? 8 : 14 },
   passwordRow:  { position: 'relative' },
   passwordInput:{ paddingRight: 46 },
   eyeBtn:       { position: 'absolute', right: 13, top: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },

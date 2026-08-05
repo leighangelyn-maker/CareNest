@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { ApiBooking, ApiServiceCategory, ApiFamilyAddress, BookingCreateRequest, PaymentInitResponse } from '../types';
+import { ApiBooking, ApiServiceCategory, ApiFamilyAddress, BookingCreateRequest, PaymentInitResponse, BookingStatus } from '../types';
 
 export async function getBookingsForFamily(familyId: string): Promise<ApiBooking[]> {
   const res = await apiClient.get(`/bookings/family/${familyId}`);
@@ -44,6 +44,15 @@ export async function getBookingsByAgency(agencyId: string): Promise<ApiBooking[
 
 export async function assignWorkerToBooking(bookingId: string, workerId: string): Promise<ApiBooking> {
   const res = await apiClient.patch<{ data: ApiBooking }>(`/bookings/${bookingId}/assign-worker`, { workerId });
+  return (res.data as any)?.data ?? res.data;
+}
+
+export async function updateBookingStatus(
+  bookingId: string,
+  status: BookingStatus,
+  agencyNotes?: string
+): Promise<ApiBooking> {
+  const res = await apiClient.patch<{ data: ApiBooking }>(`/bookings/${bookingId}/status`, { status, agencyNotes });
   return (res.data as any)?.data ?? res.data;
 }
 

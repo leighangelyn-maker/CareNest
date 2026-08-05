@@ -31,7 +31,6 @@ import LoginScreen from './src/screens/LoginScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AgencyProfileScreen from './src/screens/AgencyProfileScreen';
 import BookScreen from './src/screens/BookScreen';
-import PayScreen from './src/screens/PayScreen';
 import ConfirmScreen from './src/screens/ConfirmScreen';
 import BookingDetailScreen from './src/screens/BookingDetailScreen';
 import AgencyBookingDetailScreen from './src/screens/AgencyBookingDetailScreen';
@@ -80,7 +79,6 @@ function AppNavigator() {
       {/* Agency-centric screens */}
       <Stack.Screen name="AgencyProfile" component={AgencyProfileScreen} />
       <Stack.Screen name="BookAgency" component={BookScreen} />
-      <Stack.Screen name="Pay" component={PayScreen} />
       <Stack.Screen name="Confirm" component={ConfirmScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
       <Stack.Screen name="AgencyBookingDetail" component={AgencyBookingDetailScreen} />

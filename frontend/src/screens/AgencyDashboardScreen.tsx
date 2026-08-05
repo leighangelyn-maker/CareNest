@@ -1,23 +1,20 @@
-/**
- * AgencyDashboardScreen — shown to AGENCY_ADMIN users after login.
- * Mirrors the client experience: shows bookings assigned to this agency,
- * revenue summary, and a worker/booking management view.
- */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, RefreshControl, Dimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CompositeScreenProps } from '@react-navigation/native';
+import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList, MainTabParamList } from '../types';
-import { useAuth } from '../AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootStackParamList, MainTabParamList, ApiServiceCategory } from '../types';
 import apiClient from '../api/client';
-import { Eyebrow, ScreenTitle, Divider, Btn } from '../components/atoms';
+import { getBookingsByAgency, getServiceCategories, updateBookingStatus } from '../api/bookings';
+import { Eyebrow, ScreenTitle, Divider } from '../components/atoms';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { Colors, Fonts, SCREEN_H_PADDING } from '../theme';
+
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Home'>,
   NativeStackScreenProps<RootStackParamList>
@@ -33,16 +30,6 @@ interface DashStats {
   totalWorkers: number;
   pendingPayouts: number;
   totalRevenueMinorUnits: number;
-}
-
-interface AgencyBooking {
-  id: string;
-  status: string;
-  category: string;
-  startTime: string;
-  endTime: string;
-  familyNotes?: string;
-  agencyPayoutMinorUnits?: number;
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -77,8 +64,9 @@ function formatGhs(minor: number) {
 
 function formatDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString('en-GB', {
-      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    return new Date(iso).toLocaleString('en-US', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: 'numeric', minute: '2-digit', hour12: true,
     });
   } catch { return iso; }
 }
@@ -113,10 +101,10 @@ const statStyles = StyleSheet.create({
 });
 
 export default function AgencyDashboardScreen({ navigation }: Props) {
-  const { name, id: agencyId } = useAuth();
   const insets = useSafeAreaInsets();
   const [stats, setStats] = useState<DashStats>(ZERO_STATS);
-  const [bookings, setBookings] = useState<AgencyBooking[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [categories, setCategories] = useState<ApiServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'bookings' | 'revenue'>('bookings');
@@ -124,42 +112,47 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [dashRes, bookRes] = await Promise.allSettled([
+      const agencyId = await AsyncStorage.getItem('agencyId');
+      if (!agencyId) { setLoading(false); return; }
+
+      const [dashRes, bookList, cats] = await Promise.allSettled([
         apiClient.get(`/agencies/${agencyId}/dashboard`),
-        apiClient.get('/bookings'),
+        getBookingsByAgency(agencyId),
+        categories.length === 0 ? getServiceCategories() : Promise.resolve(categories),
       ]);
       if (dashRes.status === 'fulfilled') {
-        setStats(dashRes.value.data?.data ?? dashRes.value.data ?? ZERO_STATS);
+        setStats((dashRes.value as any).data?.data ?? (dashRes.value as any).data ?? ZERO_STATS);
       }
-      if (bookRes.status === 'fulfilled') {
-        const raw = bookRes.value.data;
-        const arr = Array.isArray(raw) ? raw
-          : Array.isArray(raw?.page?.data) ? raw.page.data
-          : Array.isArray(raw?.data) ? raw.data : [];
-        setBookings(arr);
+      if (bookList.status === 'fulfilled') {
+        setBookings((bookList as any).value ?? []);
+      }
+      if (cats.status === 'fulfilled' && categories.length === 0) {
+        setCategories((cats as any).value ?? []);
       }
     } catch {}
     if (!silent) setLoading(false);
-  }, [agencyId]);
+  }, [categories]);
 
-  useEffect(() => { load(); }, [load]);
-
-  async function handleAssign(bookingId: string) {
-    try {
-      await apiClient.patch(`/bookings/${bookingId}/assign-worker`, { workerId: null });
+  useFocusEffect(
+    useCallback(() => {
       load(true);
-    } catch {}
+    }, [load])
+  );
+
+  function categoryName(serviceCategoryId: string | undefined): string {
+    if (!serviceCategoryId) return 'Service';
+    return categories.find(c => c.id === serviceCategoryId)?.name ?? 'Service';
+  }
+
+  function handleAssign(bookingId: string) {
+    navigation.navigate('AgencyBookingDetail', { bookingId });
   }
 
   async function handleComplete(bookingId: string) {
     try {
-      await apiClient.patch(`/bookings/${bookingId}/complete`);
+      await updateBookingStatus(bookingId, 'COMPLETED');
       load(true);
-    } catch {
-      setBookings(prev =>
-        prev.map(b => b.id === bookingId ? { ...b, status: 'COMPLETED' } : b)
-      );
-    }
+    } catch {}
   }
 
   return (
@@ -175,7 +168,6 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
           />
         }
       >
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={Colors.goldLight} strokeWidth="1.8">
@@ -184,11 +176,10 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
           </View>
           <View style={styles.headerText}>
             <Eyebrow>Agency Dashboard</Eyebrow>
-            <ScreenTitle size={20}>{name ?? 'My Agency'}</ScreenTitle>
+            <ScreenTitle size={20}>My Agency</ScreenTitle>
           </View>
         </View>
 
-        {/* Stats grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
             <StatCard label="Total Bookings" value={stats.totalBookings} />
@@ -211,7 +202,6 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* Tab switcher */}
         <View style={styles.tabRow}>
           <TouchableOpacity
             style={[styles.tabBtn, tab === 'bookings' && styles.tabBtnActive]}
@@ -252,7 +242,7 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
               bookings.map(b => (
                 <View key={b.id} style={styles.bookingCard}>
                   <View style={styles.bookingTop}>
-                    <Text style={styles.bookingCategory}>{b.category}</Text>
+                    <Text style={styles.bookingCategory}>{categoryName(b.serviceCategoryId)}</Text>
                     <View style={[styles.statusBadge, { backgroundColor: `${STATUS_COLOR[b.status] ?? Colors.slate}22` }]}>
                       <Text style={[styles.statusText, { color: STATUS_COLOR[b.status] ?? Colors.slate }]}>
                         {STATUS_LABEL[b.status] ?? b.status}
@@ -267,21 +257,20 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
                   ) : null}
                   {b.agencyPayoutMinorUnits ? (
                     <Text style={styles.bookingPayout}>
-                      Payout: {formatGhs(Math.round(b.agencyPayoutMinorUnits * 0.93))} (after 7% fee)
+                      Payout: {formatGhs(b.agencyPayoutMinorUnits)}
                     </Text>
                   ) : null}
 
-                  {/* Actions */}
                   <View style={styles.actionRow}>
                     {b.status === 'PENDING_ASSIGNMENT' && (
                       <TouchableOpacity
                         style={styles.actionBtn}
                         onPress={() => handleAssign(b.id)}
                       >
-                        <Text style={styles.actionBtnText}>Mark Assigned</Text>
+                        <Text style={styles.actionBtnText}>Assign a worker</Text>
                       </TouchableOpacity>
                     )}
-                    {(b.status === 'ASSIGNED' || b.status === 'IN_PROGRESS') && (
+                    {b.status === 'IN_PROGRESS' && (
                       <TouchableOpacity
                         style={[styles.actionBtn, { backgroundColor: Colors.success }]}
                         onPress={() => handleComplete(b.id)}
@@ -295,7 +284,6 @@ export default function AgencyDashboardScreen({ navigation }: Props) {
             )}
           </>
         ) : (
-          /* Revenue tab */
           stats.totalRevenueMinorUnits === 0 ? (
             <View style={styles.empty}>
               <View style={styles.emptyIconBox}>

@@ -228,7 +228,7 @@ export default function BookScreen({ navigation, route }: Props) {
         familyNotes: notes.trim() || undefined,
       });
 
-      navigation.navigate('Pay', { booking, agency });
+      navigation.navigate('Confirm', { booking, agency });
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? e?.message ?? 'Failed to create booking.';
       setErrors({ general: msg });
@@ -253,7 +253,7 @@ export default function BookScreen({ navigation, route }: Props) {
             showsVerticalScrollIndicator={false}
           >
             <BackBtn onPress={() => navigation.goBack()} />
-            <ProgressBar current={1} total={3} />
+            <ProgressBar current={1} total={2} />
             <ScreenTitle size={SCREEN_WIDTH < 360 ? 20 : 24}>
               Book {agency.name}
             </ScreenTitle>
@@ -514,7 +514,7 @@ export default function BookScreen({ navigation, route }: Props) {
                 <ActivityIndicator color={Colors.goldLight} />
               </View>
             ) : (
-              <Btn onPress={handleContinue}>Continue to payment →</Btn>
+              <Btn onPress={handleContinue}>Send booking request →</Btn>
             )}
           </ScrollView>
         </KeyboardAvoidingView>

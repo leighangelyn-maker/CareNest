@@ -184,7 +184,6 @@ export type RootStackParamList = {
   AgencyProfile: { agency: AgencySummary };
   BookAgency: { agency: AgencySummary };
   Profile: { worker: ApiWorker };
-  Pay: { booking: ApiBooking; agency: AgencySummary };
   Confirm:{ booking: ApiBooking; agency: AgencySummary };
   BookingDetail: { bookingId: string };
   AgencyBookingDetail: { bookingId: string };

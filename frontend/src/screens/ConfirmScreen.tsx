@@ -12,7 +12,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Confirm'>;
 
 function statusLabel(status: BookingStatus): string {
   switch (status) {
-    case 'PENDING_ASSIGNMENT': return 'Pending';
+    case 'PENDING_ASSIGNMENT': return 'Pending assignment';
     case 'ASSIGNED':           return 'Assigned';
     case 'IN_PROGRESS':        return 'In Progress';
     case 'COMPLETED':          return 'Completed';
@@ -64,16 +64,19 @@ export default function ConfirmScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ProgressBar current={3} total={3} />
+      <ProgressBar current={2} total={2} />
 
       <View style={styles.ticket}>
         <View style={[styles.notch, styles.notchLeft]} />
         <View style={[styles.notch, styles.notchRight]} />
         <View style={styles.seal}><CheckIcon /></View>
-        <ScreenTitle size={18}>You're booked!</ScreenTitle>
+        <ScreenTitle size={18}>Request sent!</ScreenTitle>
         <Sub style={{ textAlign: 'center', marginTop: 4 }}>
           {agency.name} · {categoryName}
         </Sub>
+        <Text style={styles.waitingNote}>
+          {agency.name} will review your request and assign a worker. You'll be notified — and able to pay — once that happens.
+        </Text>
         <View style={{ marginTop: 14, width: '100%' }}>
           <Divider dashed />
           <Row label="Booking ref" value={shortRef} />
@@ -125,5 +128,9 @@ const styles = StyleSheet.create({
     width: 60, height: 60, borderRadius: 30,
     backgroundColor: Colors.successBg, borderWidth: 2, borderColor: Colors.success,
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  waitingNote: {
+    fontFamily: Fonts.inter, fontSize: 12.5, color: Colors.slate,
+    textAlign: 'center', lineHeight: 19, marginTop: 10,
   },
 });

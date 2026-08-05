@@ -1,15 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, ActivityIndicator,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CompositeScreenProps } from '@react-navigation/native';
+import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, MainTabParamList, EnrichedBooking, BookingStatus } from '../types';
@@ -33,8 +29,9 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 function badgeStyle(status: BookingStatus) {
   switch (status) {
     case 'PENDING_ASSIGNMENT':
-    case 'ASSIGNED':
       return { bg: Colors.goldBg, text: Colors.goldText };
+    case 'ASSIGNED':
+      return { bg: Colors.navyTint, text: Colors.navy };
     case 'IN_PROGRESS':
       return { bg: Colors.navyTint, text: Colors.navy };
     case 'COMPLETED':
@@ -56,14 +53,12 @@ function formatDate(iso: string): string {
 export default function BookingsScreen({ navigation }: Props) {
   const { bookings, loading, error, fetchHistory } = useBookings();
   const insets = useSafeAreaInsets();
-  const hasFetched = useRef(false);
 
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
+  useFocusEffect(
+    useCallback(() => {
       fetchHistory();
-    }
-  }, [fetchHistory]);
+     }, [fetchHistory])
+   );
 
   if (loading && bookings.length === 0) {
     return (
@@ -152,11 +147,31 @@ export default function BookingsScreen({ navigation }: Props) {
                       {STATUS_LABEL[b.status]}
                     </Text>
                   </View>
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.slateSoft} strokeWidth="2" strokeLinecap="round" style={{ marginTop: 8 }}>
+                  <Svg
+                    width={14} height={14} viewBox="0 0 24 24"
+                    fill="none" stroke={Colors.slateSoft} strokeWidth="2"
+                    strokeLinecap="round" style={{ marginTop: 8 }}
+                  >
                     <Path d="M9 18l6-6-6-6" />
                   </Svg>
                 </View>
               </View>
+
+              {/* Worker assigned — prompt to pay */}
+              {b.status === 'ASSIGNED' && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('BookingDetail', { bookingId: b.id })}
+                  style={styles.payPromptBtn}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.payPromptDot} />
+                  <Text style={styles.payPromptText}>
+                    Worker assigned — tap to pay
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Completed — prompt to review */}
               {b.status === 'COMPLETED' && !b.reviewed && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('Review', { bookingId: b.id })}
@@ -174,32 +189,52 @@ export default function BookingsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.paper },
-  header: {
-    paddingHorizontal: SCREEN_H_PADDING,
-    paddingTop: 18,
-    paddingBottom: 10,
-    flexShrink: 0,
-  },
-  centred: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
-  errorText: { fontFamily: Fonts.inter, fontSize: 13, color: Colors.danger, textAlign: 'center', marginBottom: 4 },
-  list: { paddingHorizontal: SCREEN_H_PADDING, paddingBottom: 14, gap: 10 },
-  item: {
+  container:    { flex: 1, backgroundColor: Colors.paper },
+  header:       { paddingHorizontal: SCREEN_H_PADDING, paddingTop: 18, paddingBottom: 10, flexShrink: 0 },
+  centred:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  errorText:    { fontFamily: Fonts.inter, fontSize: 13, color: Colors.danger, textAlign: 'center', marginBottom: 4 },
+  list:         { paddingHorizontal: SCREEN_H_PADDING, paddingBottom: 14, gap: 10 },
+  item:         {
     borderWidth: 1, borderColor: Colors.line, borderRadius: 16, padding: 14,
     backgroundColor: Colors.paper,
     shadowColor: Colors.navy,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 6,
-    elevation: 1,
+    shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
   },
-  itemTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  itemLeft: { flex: 1, marginRight: 10 },
-  itemRight: { alignItems: 'flex-end', flexShrink: 0 },
-  itemAgency: { fontFamily: Fonts.interBold, fontSize: 14, color: Colors.navy },
+  itemTop:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  itemLeft:     { flex: 1, marginRight: 10 },
+  itemRight:    { alignItems: 'flex-end', flexShrink: 0 },
+  itemAgency:   { fontFamily: Fonts.interBold, fontSize: 14, color: Colors.navy },
   itemCategory: { fontFamily: Fonts.interSemiBold, fontSize: 12, color: Colors.slate, marginTop: 2 },
-  badge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'transparent' },
-  badgeText: { fontFamily: Fonts.interBold, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: 0.4 },
-  itemMeta: { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slateSoft, marginTop: 5 },
+  badge:        { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'transparent' },
+  badgeText:    { fontFamily: Fonts.interBold, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: 0.4 },
+  itemMeta:     { fontFamily: Fonts.inter, fontSize: 11.5, color: Colors.slateSoft, marginTop: 5 },
+
+  // Pay prompt — shows when worker is assigned
+  payPromptBtn: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 9,
+    backgroundColor: Colors.navyPale,
+    borderWidth: 1,
+    borderColor: Colors.navy + '33',
+    alignSelf: 'flex-start',
+  },
+  payPromptDot: {
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: Colors.gold,
+  },
+  payPromptText: {
+    fontFamily: Fonts.interSemiBold,
+    fontSize: 12.5,
+    color: Colors.navy,
+  },
+
+  // Review button
   reviewBtn: {
     marginTop: 10,
     paddingHorizontal: 14,
@@ -209,13 +244,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     shadowColor: Colors.success,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.25, shadowRadius: 6, elevation: 3,
   },
   reviewBtnText: { fontFamily: Fonts.interBold, fontSize: 12.5, color: Colors.paper },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
-  emptyIcon: { width: 56, height: 56, backgroundColor: Colors.navyPale, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+
+  // Empty state
+  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  emptyIcon:  { width: 56, height: 56, backgroundColor: Colors.navyPale, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   emptyTitle: { fontFamily: Fonts.interBold, fontSize: 13.5, color: Colors.navy, marginBottom: 4, textAlign: 'center' },
-  emptyBody: { fontFamily: Fonts.inter, fontSize: 12.5, color: Colors.slate, lineHeight: 20, textAlign: 'center' },
+  emptyBody:  { fontFamily: Fonts.inter, fontSize: 12.5, color: Colors.slate, lineHeight: 20, textAlign: 'center' },
 });
